@@ -1,0 +1,410 @@
+﻿<Application x:Class="PresupuestoPro.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:PresupuestoPro" 
+             xmlns:converters="clr-namespace:PresupuestoPro.Converters">
+    
+            
+             
+    
+            
+    <Application.Resources>
+        <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        <converters:ZeroToEmptyConverter x:Key="ZeroToEmptyConverter"/>
+        <converters:DuplicateToColorConverter x:Key="DuplicateToColorConverter"/>
+        <converters:DuplicateToBackgroundConverter x:Key="DuplicateToBackgroundConverter"/>
+
+        <!-- Colores personalizados -->
+        <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#0C3C61"/>
+        <SolidColorBrush x:Key="MenuForegroundBrush" Color="White"/>
+        <SolidColorBrush x:Key="MenuItemHoverBrush" Color="#155A8A"/>
+        <SolidColorBrush x:Key="MenuItemPressedBrush" Color="#1976D2"/>
+        <SolidColorBrush x:Key="MenuItemSeparatorBrush" Color="#4A7B9D"/>
+
+        <!-- Estilo para Menu -->
+        <Style x:Key="CustomMenuStyle" TargetType="Menu">
+            <Setter Property="Background" Value="{StaticResource MenuBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource MenuForegroundBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <!-- Estilo para MenuItem (nivel superior) -->
+        <Style x:Key="CustomTopMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Background" Value="{StaticResource MenuBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource MenuForegroundBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,4"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Grid>
+                            <!-- Botón principal -->
+                            <Border x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                                <ContentPresenter
+                            Content="{TemplateBinding Header}"
+                            RecognizesAccessKey="True"
+                            VerticalAlignment="Center"/>
+                            </Border>
+
+                            <!-- Popup del submenú -->
+                            <Popup x:Name="PART_Popup"
+                           Placement="Bottom"
+                           IsOpen="{TemplateBinding IsSubmenuOpen}"
+                           AllowsTransparency="True"
+                           Focusable="False">
+                                <Border Background="{StaticResource MenuBackgroundBrush}"
+                                BorderBrush="#4A7B9D"
+                                BorderThickness="1"
+                                Padding="6,4">
+                                    <ItemsPresenter />
+                                </Border>
+                            </Popup>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Border"
+                                Property="Background"
+                                Value="{StaticResource MenuItemHoverBrush}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Border"
+                                Property="Background"
+                                Value="{StaticResource MenuItemPressedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <!-- Estilo para SubMenuItem (con Popup para submenús) -->
+        <Style x:Key="CustomSubMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Background" Value="{StaticResource MenuBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource MenuForegroundBrush}"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="2,1"/>
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Grid x:Name="Root" SnapsToDevicePixels="True">
+                            <!-- Fondo -->
+                            <Border x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="2"/>
+
+                            <!-- Contenido -->
+                            <Grid Margin="8,0,8,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Icono -->
+                                <ContentPresenter x:Name="Icon"
+                                          Content="{TemplateBinding Icon}"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,6,0"/>
+
+                                <!-- Texto -->
+                                <ContentPresenter x:Name="Header"
+                                          Content="{TemplateBinding Header}"
+                                          Grid.Column="1"
+                                          VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+
+                                <!-- Flecha -->
+                                <Path x:Name="Arrow"
+                              Grid.Column="2"
+                              Data="M0,0 L0,8 L4,4 Z"
+                              Fill="{TemplateBinding Foreground}"
+                              Margin="10,0,0,0"
+                              VerticalAlignment="Center"
+                              Visibility="Collapsed"/>
+                            </Grid>
+
+                            <!-- Popup -->
+                            <Popup x:Name="PART_Popup"
+                           Placement="Right"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           IsOpen="{TemplateBinding IsSubmenuOpen}">
+                                <Border x:Name="PopupBorder"
+                                Background="{StaticResource MenuBackgroundBrush}"
+                                BorderBrush="#4A7B9D"
+                                BorderThickness="1"
+                                CornerRadius="3"
+                                Padding="6"
+                                Opacity="0"
+                                RenderTransformOrigin="0,0.5">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform X="-10"/>
+                                    </Border.RenderTransform>
+
+                                    <ItemsPresenter/>
+                                </Border>
+                            </Popup>
+                        </Grid>
+
+                        <!-- 🎬 ANIMACIONES -->
+                        <ControlTemplate.Triggers>
+
+                            <!-- Hover -->
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Border"
+                                Property="Background"
+                                Value="{StaticResource MenuItemHoverBrush}"/>
+                            </Trigger>
+
+                            <!-- Flecha visible -->
+                            <Trigger Property="HasItems" Value="True">
+                                <Setter TargetName="Arrow"
+                                Property="Visibility"
+                                Value="Visible"/>
+                            </Trigger>
+
+                            <!-- Disabled -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+
+                            <!-- ✨ Fade + Slide animation -->
+                            <Trigger SourceName="PART_Popup" Property="IsOpen" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="PopupBorder"
+                                                     Storyboard.TargetProperty="Opacity"
+                                                     From="0"
+                                                     To="1"
+                                                     Duration="0:0:0.15"/>
+                                            <DoubleAnimation Storyboard.TargetName="PopupBorder"
+                                                     Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)"
+                                                     From="-10"
+                                                     To="0"
+                                                     Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <!-- Botón primario (destacado) -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#1976D2"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                            CornerRadius="4"
+                            Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botón secundario -->
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#1976D2"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#1976D2"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F5F5F5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Estilo para TabControl con scroll -->
+        <!-- Estilo CORRECTO para TabControl con scroll horizontal -->
+        <Style x:Key="ScrollableTabControlStyle" TargetType="TabControl">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#CFCFCF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid ClipToBounds="True">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="25"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                             
+
+
+                            <!-- CABECERA -->
+                            <Grid Grid.Row="0" Background="White">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="32"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="32"/>
+                                     
+                                </Grid.ColumnDefinitions>
+
+                                <!-- BOTÓN IZQUIERDA -->
+                                <Button x:Name="PART_ScrollLeft"
+                                Content="◀"
+                                FontSize="12"   
+                                        Height="25"
+                                        VerticalAlignment="Stretch"
+                                        HorizontalAlignment="Stretch"
+                                Visibility="Collapsed"
+                                Background="White"
+                                BorderThickness="0"/>
+
+                                <!-- SCROLL DE TABS -->
+                                <ScrollViewer x:Name="PART_HeaderScroll"
+                                      Grid.Column="1"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      CanContentScroll="False">
+                                    <TabPanel x:Name="HeaderPanel"
+                                      IsItemsHost="True"
+                                        Height="25"
+                                        Background="White"/>
+                                    <!--  Orientation="Horizontal "-->
+                                </ScrollViewer>
+
+                                <!-- BOTÓN DERECHA -->
+                                <Button x:Name="PART_ScrollRight"
+                                Grid.Column="2"
+                                Content="▶"
+                                FontSize="12"
+                                Height="25"
+                                VerticalAlignment="Stretch"
+                                HorizontalAlignment="Stretch"
+                                Visibility="Collapsed"
+                                Background="White"
+                                BorderThickness="0"/>
+                            </Grid>
+
+                            <!-- CONTENIDO -->
+                            <Border Grid.Row="1"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                                <ContentPresenter x:Name="PART_SelectedContentHost"
+                                          ContentSource="SelectedContent"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- ESTILOS PARA EL TABITEM 
+        <Style TargetType="TabItem" BasedOn="{StaticResource ModernTabItemStyle}">
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+        </Style>-->
+      
+
+        <Style x:Key="ModernTabItemStyle" TargetType="TabItem">
+            <!-- Tamaño -->
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,-2,0"/>
+
+            <!-- Colores base -->
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#1976D2"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#1976D2"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="0"
+                        Padding="{TemplateBinding Padding}">
+
+                            <ContentPresenter
+                        ContentSource="Header"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <!-- Hover -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#BEE6FD"/>
+                            </Trigger>
+
+                            <!-- Seleccionado -->
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#1976D2"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="#1976D2"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+
+                            <!-- Deshabilitado -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+    </Application.Resources>
+</Application>

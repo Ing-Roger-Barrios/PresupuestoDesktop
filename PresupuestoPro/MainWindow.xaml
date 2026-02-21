@@ -1,0 +1,508 @@
+﻿<Window x:Class="PresupuestoPro.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:viewmodels="clr-namespace:PresupuestoPro.ViewModels"
+        xmlns:local="clr-namespace:PresupuestoPro" 
+        xmlns:behaviors="clr-namespace:PresupuestoPro.Behaviors"
+        mc:Ignorable="d"
+        Title="MainWindow" 
+        Height="800" Width="1400">
+
+    <!--<Window.DataContext>
+         <viewmodels:MainViewModel />
+        
+    </Window.DataContext> -->
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Menú principal -->
+            <RowDefinition Height="Auto"/>
+            <!-- Barra de herramientas -->
+            <RowDefinition Height="Auto"/>
+            <!-- Separador -->
+            <RowDefinition Height="1"/>
+            <!-- Contenido principal -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- MENÚ PRINCIPAL -->
+        <!-- MENÚ PRINCIPAL -->
+        <Menu Grid.Row="0" Style="{StaticResource CustomMenuStyle}">
+            <MenuItem Header="📁 Archivo" Style="{StaticResource CustomTopMenuItemStyle}">
+                <MenuItem Header="Nuevo Proyecto" Command="{Binding CreateProjectCommand}" 
+                  Style="{StaticResource CustomSubMenuItemStyle}" />
+                <MenuItem Header="Abrir Proyecto" Style="{StaticResource CustomSubMenuItemStyle}" />
+                <Separator Style="{StaticResource {x:Static MenuItem.SeparatorStyleKey}}" />
+                <MenuItem Header="Importar" Style="{StaticResource CustomSubMenuItemStyle}">
+                    <MenuItem Header="Base de Datos de Catálogo" Style="{StaticResource CustomSubMenuItemStyle}" />
+                    <MenuItem Header="Proyecto (.json)" Style="{StaticResource CustomSubMenuItemStyle}" />
+                </MenuItem>
+                <MenuItem Header="Exportar" Style="{StaticResource CustomSubMenuItemStyle}">
+                    <MenuItem Header="Proyecto a Excel" Style="{StaticResource CustomSubMenuItemStyle}" />
+                    <MenuItem Header="Proyecto a PDF" Style="{StaticResource CustomSubMenuItemStyle}" />
+                    <MenuItem Header="Proyecto a JSON" Style="{StaticResource CustomSubMenuItemStyle}" />
+                </MenuItem>
+                <Separator Style="{StaticResource {x:Static MenuItem.SeparatorStyleKey}}" />
+                <MenuItem Header="Salir" Command="{Binding ExitCommand}" 
+                  Style="{StaticResource CustomSubMenuItemStyle}" />
+            </MenuItem>
+
+            <MenuItem Header="🛠️ Herramientas" Style="{StaticResource CustomTopMenuItemStyle}">
+                <MenuItem Header="Administrar Catálogo" Style="{StaticResource CustomSubMenuItemStyle}" />
+                <MenuItem Header="Sincronizar Precios" Style="{StaticResource CustomSubMenuItemStyle}" />
+                <MenuItem Header="Calculadora de Rendimientos" Style="{StaticResource CustomSubMenuItemStyle}" />
+            </MenuItem>
+
+            <MenuItem Header="⚙️ Configuración" Style="{StaticResource CustomTopMenuItemStyle}">
+                <MenuItem Header="Norma SABS Bolivia" Command="{Binding ConfigurePricingCommand}" 
+                  Style="{StaticResource CustomSubMenuItemStyle}" />
+                <MenuItem Header="Preferencias" Style="{StaticResource CustomSubMenuItemStyle}" />
+                <MenuItem Header="Unidades y Monedas" Style="{StaticResource CustomSubMenuItemStyle}" />
+            </MenuItem>
+
+            <MenuItem Header="❓ Ayuda" Style="{StaticResource CustomTopMenuItemStyle}">
+                <MenuItem Header="Guía de Usuario" Style="{StaticResource CustomSubMenuItemStyle}" />
+                <MenuItem Header="Acerca de PresupuestoPro" Command="{Binding AboutCommand}" 
+                  Style="{StaticResource CustomSubMenuItemStyle}" />
+                <MenuItem Header="Verificar Actualizaciones" Style="{StaticResource CustomSubMenuItemStyle}" />
+            </MenuItem>
+            <!-- Indicador ONLINE / OFFLINE -->
+            <Border Margin="20,0,0,0"
+                    Padding="8,4"
+                    CornerRadius="6"
+                    Background="{Binding ConnectionStatusColor}">
+                <TextBlock Text="{Binding ConnectionStatusText}"
+               Foreground="White"
+               FontWeight="Bold"
+               VerticalAlignment="Center"/>
+            </Border>
+        </Menu>
+
+        <!-- BARRA DE HERRAMIENTAS RÁPIDA -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" 
+                    Background="White"   Margin="0,0,0,0">
+
+            <!-- Grupo: Proyecto -->
+            <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,0,15,0">
+                <StackPanel Orientation="Horizontal" Margin="8,4">
+                    <Button Content="Nuevo Proyecto" 
+                            Command="{Binding CreateProjectCommand}"
+                            Background="#1976D2" Foreground="White" 
+                            FontWeight="SemiBold" Padding="12,6"
+                            Margin="0,0,8,0"/>
+                    <!-- Botón condicional según estado -->
+                    <Button Content="{Binding UpdateButtonContent}"
+                            Command="{Binding SyncCatalogCommand}"
+                            Background="{Binding UpdateButtonBackground}"
+                            Foreground="White" 
+                            FontWeight="SemiBold" Padding="12,6"
+                            ToolTip="Sincronizar con la API"
+                            Margin="0,0,0,0"/>
+
+
+                </StackPanel>
+            </Border>
+
+            <!-- Grupo: Configuración -->
+            <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,0,15,0">
+                <StackPanel Orientation="Horizontal" Margin="8,4">
+                    <Button Content="Configurar Norma SABS" 
+                            Command="{Binding ConfigurePricingCommand}"
+                            Background="#1976D2" Foreground="White" 
+                            FontWeight="SemiBold" Padding="12,6"
+                            ToolTip="Configurar parámetros de cálculo según norma SABS de Bolivia"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Grupo: Exportar -->
+            <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,0,15,0">
+                <StackPanel Orientation="Horizontal" Margin="8,4">
+                    <Button Content="Exportar a Excel" 
+                            Command="{Binding ExportToExcelCommand}"
+                            Background="White" BorderBrush="#1976D2" BorderThickness="1"
+                            Foreground="#1976D2" FontWeight="SemiBold" Padding="12,6"/>
+                    <Button Content="Exportar a PDF" 
+                            Command="{Binding ExportToPdfCommand}"
+                            Background="White" BorderBrush="#1976D2" BorderThickness="1"
+                            Foreground="#1976D2" FontWeight="SemiBold" Padding="12,6"
+                            Margin="8,0,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Total del proyecto -->
+            <TextBlock Text="{Binding TotalProyecto, StringFormat='💰 Total: {0:C2}'}"
+                       VerticalAlignment="Center"
+                       FontWeight="Bold"
+                       Foreground="#1565C0"
+                       FontSize="14"
+                       Margin="20,0,0,0"/>
+            <Button Content="Debug Data" Click="DebugData_Click" Margin="10"/>
+        </StackPanel>
+
+        <!-- Separador -->
+        <Border Grid.Row="2" Background="#E0E0E0" Height="1"/>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <Grid Grid.Row="3" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="500"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Panel: Catálogo -->
+            <!-- Panel: Catálogo -->
+            <GroupBox Header="Catálogo de Partidas" Grid.Column="0">
+                <TreeView ItemsSource="{Binding CatalogGroups}" Margin="10"
+              PreviewMouseLeftButtonDown="TreeView_PreviewMouseLeftButtonDown"
+              PreviewMouseMove="TreeView_PreviewMouseMove">
+
+                    <!-- Nivel 1: Categoría -->
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Items}">
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding IsSelected}" Visibility="Collapsed"/>
+                                <TextBlock Text="📁" Margin="0,0,5,0"/>
+                                <TextBlock Text="{Binding Name}" FontWeight="Bold"
+                               MouseDown="Category_MouseDown"/>
+                                <!-- <TextBlock Text=" - " Foreground="Gray"/>
+                                <TextBlock Text="{Binding Description}" FontStyle="Italic" Foreground="Gray"/>-->
+                            </StackPanel>
+
+                            <!-- Nivel 2: Módulo -->
+                            <HierarchicalDataTemplate.ItemTemplate>
+                                <HierarchicalDataTemplate ItemsSource="{Binding Items}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="📁" Margin="5,0,5,0"/>
+                                        <CheckBox IsChecked="{Binding IsSelected}" 
+                                      PreviewMouseDown="ModuleCheckbox_PreviewMouseDown"/>
+                                        
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                       MouseDown="Module_MouseDown"/>
+                                        <!--<TextBlock Text=" - " Foreground="Gray"/>
+                                        <TextBlock Text="{Binding Description}" FontStyle="Italic" Foreground="Gray"/> -->
+                                    </StackPanel>
+
+                                    <!-- Nivel 3: Item -->
+                                    <HierarchicalDataTemplate.ItemTemplate>
+                                        <HierarchicalDataTemplate ItemsSource="{Binding Recursos}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="📄" Margin="5,0,5,0"/>
+                                                <CheckBox IsChecked="{Binding IsSelected}" 
+                                              PreviewMouseDown="ItemCheckbox_PreviewMouseDown"/>
+                                                
+                                                <TextBlock Text="{Binding Display}"
+                                               MouseDown="Item_MouseDown"/>
+                                                <TextBlock Text=" | " Foreground="Gray"/>
+                                                <TextBlock Text="{Binding Unidad}" Foreground="Gray"/>
+                                            </StackPanel>
+
+                                            <!-- Nivel 4: Recurso -->
+                                            <HierarchicalDataTemplate.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="•" Margin="5,0,5,0"/>
+                                                        <CheckBox IsChecked="{Binding IsSelected}" 
+                                                      PreviewMouseDown="ResourceCheckbox_PreviewMouseDown"/>
+                                                        
+                                                        <TextBlock Text="{Binding Nombre}"
+                                                       MouseDown="Resource_MouseDown"/>
+                                                        <TextBlock Text=" - " Foreground="Gray"/>
+                                                        <TextBlock Text="{Binding Tipo}" Foreground="Gray"/>
+                                                        <TextBlock Text=" | " Foreground="Gray"/>
+                                                        <TextBlock Text="{Binding PrecioUnitarioOriginal, StringFormat=C}" Foreground="Green"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </HierarchicalDataTemplate.ItemTemplate>
+                                        </HierarchicalDataTemplate>
+                                    </HierarchicalDataTemplate.ItemTemplate>
+                                </HierarchicalDataTemplate>
+                            </HierarchicalDataTemplate.ItemTemplate>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </GroupBox>
+
+            <!-- Separador -->
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"/>
+
+            <!-- Panel: Proyecto -->
+            <!-- Panel: Proyecto -->
+            <Grid Grid.Column="2" AllowDrop="True"  Drop="ProjectArea_Drop"  Background="Transparent">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Botones superiores -->
+                <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,0,15,0">
+                    <StackPanel Orientation="Horizontal" Margin="8,4">
+                        <Button Content="Agregar Módulo" 
+                    Command="{Binding AddModuleCommand}"
+                    Background="White" BorderBrush="#1976D2" BorderThickness="1"
+                    Foreground="#1976D2" FontWeight="SemiBold" Padding="12,6"/>
+
+                        <!-- Subtotal del módulo -->
+                        <TextBlock Text="{Binding SelectedModule.Subtotal, StringFormat='📊 Subtotal: {0:C2}'}"
+                       VerticalAlignment="Center"
+                       FontWeight="Bold"
+                       Foreground="#2E7D32"
+                       Margin="15,0,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Contenido principal -->
+                <Grid Grid.Row="1">
+                    <!-- TabControl con proyectos -->
+                    <TabControl x:Name="ModulesTabControl"
+                                Loaded="ModulesTabControl_Loaded"
+                                ItemsSource="{Binding ProjectModules}"
+                                SelectedItem="{Binding SelectedModule}"
+                                
+                                Style="{StaticResource ScrollableTabControlStyle}">
+                        <TabControl.Resources>
+                            <Style TargetType="TabItem"
+           BasedOn="{StaticResource ModernTabItemStyle}"/>
+                        </TabControl.Resources>
+
+                        <TabControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" Margin="10,2"/>
+                            </DataTemplate>
+                        </TabControl.ItemTemplate>
+
+                        <TabControl.ContentTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Subtotal del módulo -->
+                                    <TextBlock Text="{Binding Subtotal, StringFormat='📊 Subtotal: {0:C2}'}"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Foreground="#2E7D32"
+                                   Margin="0,0,0,10"/>
+
+                                    <!-- DataGrid editable -->
+                                    <DataGrid ItemsSource="{Binding Items}"
+                                              SelectedItem="{Binding DataContext.SelectedBudgetItem, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              SelectionMode="Extended"
+                                              SelectionUnit="FullRow"
+                                              AutoGenerateColumns="False"
+                                              CanUserAddRows="False"
+                                              CanUserDeleteRows="True"
+                                              ColumnHeaderHeight="30"
+                                              RowHeight="30"
+                                              FontSize="13"
+                                              IsReadOnly="False"
+                                              AllowDrop="True"
+                                              VerticalAlignment="Top"
+                                                GridLinesVisibility="All"
+                                                HorizontalGridLinesBrush="#D3D3D3"
+                                                VerticalGridLinesBrush="#D3D3D3"
+                                              BorderBrush="#D3D3D3"
+                                                Background="White"
+                                                RowBackground="White"
+                                              
+                                                BorderThickness="0"
+                                              Drop="DataGridRow_Drop">
+                                        <i:Interaction.Behaviors>
+                                            <behaviors:DataGridDragDropBehavior />
+                                        </i:Interaction.Behaviors>
+
+                                        <DataGrid.Resources>
+                                            <Style TargetType="DataGridRow">
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter Property="Background" Value="#E9F5EA" />
+                                                        <Setter Property="BorderBrush" Value="Transparent" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+
+                                            <Style TargetType="DataGridColumnHeader">
+                                                <Setter Property="Background" Value="#EAEAEA"/>
+                                                <Setter Property="BorderBrush" Value="#D3D3D3"/>
+                                                <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                                <Setter Property="Padding" Value="5"/>
+                                            </Style>
+                                        </DataGrid.Resources>
+
+                                        <!-- Añadir estilo para las filas -->
+                                        <DataGrid.RowStyle>
+                                            <Style TargetType="DataGridRow">
+                                                <Setter Property="AllowDrop" Value="True"/>
+                                                
+                                                <EventSetter Event="Drop" Handler="DataGridRow_Drop"/>
+                                                
+                                                 
+                                            </Style>
+                                        </DataGrid.RowStyle>
+
+                                        <DataGrid.Columns>
+                                            <DataGridTemplateColumn Width="30">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"/>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            
+                                            <DataGridTextColumn Header="Código" 
+                                                    Binding="{Binding Code}" 
+                                                    Width="100" IsReadOnly="True"/>
+
+                                            <!-- Columna de Descripción con validación -->
+                                            <DataGridTemplateColumn Header="Descripción" Width="*">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Description}" 
+                                                                   Tag="{Binding}"
+                                                                   Foreground="{Binding IsDuplicate, Converter={StaticResource DuplicateToColorConverter}}"
+                                                                   ToolTip="{Binding DuplicateWarning}"/>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                                <DataGridTemplateColumn.CellEditingTemplate>
+                                                    <DataTemplate>
+                                                        <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="{Binding IsDuplicate, Converter={StaticResource DuplicateToBackgroundConverter}}"
+                                                                         ToolTip="{Binding DuplicateWarning}"/>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellEditingTemplate>
+                                            </DataGridTemplateColumn>
+
+                                            <DataGridTextColumn Header="Unidad" 
+                                                    Binding="{Binding Unit}" 
+                                                    Width="80" IsReadOnly="True"/>
+
+                                            <DataGridTemplateColumn Header="Cantidad" Width="100">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBox Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"
+                                                     VerticalContentAlignment="Center"
+                                                     Padding="4,2"/>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+
+                                            <DataGridTextColumn Header="Precio Unitario" 
+                                                    Binding="{Binding UnitPrice, StringFormat=C2}" 
+                                                    Width="120">
+                                                <DataGridTextColumn.ElementStyle>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                        <Setter Property="FontWeight" Value="Medium"/>
+                                                    </Style>
+                                                </DataGridTextColumn.ElementStyle>
+                                                <DataGridTextColumn.EditingElementStyle>
+                                                    <Style TargetType="TextBox">
+                                                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                                        <Setter Property="Padding" Value="4,2"/>
+                                                    </Style>
+                                                </DataGridTextColumn.EditingElementStyle>
+                                            </DataGridTextColumn>
+
+                                            <DataGridTextColumn Header="Total" 
+                                                    Binding="{Binding Total, StringFormat=C2}" 
+                                                    Width="120" IsReadOnly="True">
+                                                <DataGridTextColumn.ElementStyle>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    </Style>
+                                                </DataGridTextColumn.ElementStyle>
+                                            </DataGridTextColumn>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </Grid>
+                            </DataTemplate>
+                        </TabControl.ContentTemplate>
+                    </TabControl>
+
+                    <!-- Mensaje cuando no hay módulos -->
+                    <TextBlock x:Name="DropHintText"
+                   Text="Arrastre una partida aquí o cree un módulo"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="16"
+                   Foreground="#888"
+                   Visibility="{Binding ProjectModules.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                </Grid>
+            </Grid>
+
+            <!-- Separador -->
+            <GridSplitter Grid.Column="3" Width="4" HorizontalAlignment="Stretch"/>
+
+            <!-- PANEL DERECHO: Recursos del item seleccionado -->
+            <GroupBox Header="Recursos del Item" 
+                      Grid.Column="4"
+                      >
+
+                <!-- PANEL DERECHO: Recursos del item seleccionado -->
+                <DataGrid ItemsSource="{Binding SelectedBudgetItem.Resources}"
+          AutoGenerateColumns="False"
+          CanUserAddRows="False"
+          CanUserDeleteRows="False"
+          RowHeight="30"
+          FontSize="12">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Tipo" 
+                            Binding="{Binding ResourceType}" 
+                            Width="80" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Nombre" 
+                            Binding="{Binding ResourceName}" 
+                            Width="*" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Unidad" 
+                            Binding="{Binding Unit}" 
+                            Width="60" IsReadOnly="True"/>
+
+                        <!-- Rendimiento editable -->
+                        <DataGridTemplateColumn Header="Rendimiento" Width="90">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding Performance, UpdateSourceTrigger=PropertyChanged, StringFormat=N4}"
+                             VerticalContentAlignment="Center"
+                             Padding="4,2"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- Precio Unitario editable -->
+                        <DataGridTemplateColumn Header="Precio Unit." Width="100">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding UnitPrice, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"
+                             VerticalContentAlignment="Center"
+                             Padding="4,2"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- Costo calculado -->
+                        <DataGridTextColumn Header="Costo" 
+                            Binding="{Binding PartialCost, StringFormat=C2}" 
+                            Width="90" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </GroupBox>
+        </Grid>
+    </Grid>
+</Window>
