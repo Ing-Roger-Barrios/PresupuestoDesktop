@@ -19,10 +19,13 @@ namespace PresupuestoPro.Services.Pricing
 
         public decimal CalculateItemUnitPrice(ProjectItemViewModel item)
         {
+
             try
             {
                 // Obtener la norma predeterminada
+                
                 var normNames = _normService.GetNormNames();
+                
                 var defaultNormName = normNames.FirstOrDefault(n => n == "Norma SABS Bolivia") ??
                                     normNames.FirstOrDefault() ?? "Norma SABS Bolivia";
 
@@ -39,6 +42,9 @@ namespace PresupuestoPro.Services.Pricing
                 var equipoTotal = item.Resources.Where(r => r.IsEquipo)
                     .Sum(r => r.Performance * r.UnitPrice);
 
+                
+
+
                 // Calcular precio final
                 return PriceCalculator.CalculateFinalUnitPrice(
                     materialesTotal,
@@ -46,6 +52,7 @@ namespace PresupuestoPro.Services.Pricing
                     equipoTotal,
                     config
                 );
+                
             }
             catch (Exception ex)
             {

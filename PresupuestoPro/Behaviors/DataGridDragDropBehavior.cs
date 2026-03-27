@@ -18,7 +18,7 @@ namespace PresupuestoPro.Behaviors
     {
         private InsertionLineAdorner _insertionAdorner;
         private AdornerLayer _adornerLayer;
-        private Point _dragStartPoint;
+        private System.Windows.Point _dragStartPoint;
         private object _draggedItem;
 
         protected override void OnAttached()
@@ -46,39 +46,52 @@ namespace PresupuestoPro.Behaviors
         private void OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _dragStartPoint = e.GetPosition(AssociatedObject);
+
+            // ✅ Verificar que el click viene de dentro del DataGrid
+            // Si el source original no es descendiente del DataGrid, ignorar
+            var source = e.OriginalSource as DependencyObject;
+            if (source == null) return;
+
+            // Verificar que el elemento clickeado está dentro del DataGrid
+            if (!AssociatedObject.IsAncestorOf(source) &&
+                !ReferenceEquals(source, AssociatedObject)) return;
+
             var element = AssociatedObject.InputHitTest(_dragStartPoint) as DependencyObject;
 
             while (element != null && !(element is DataGridRow))
-            {
                 element = VisualTreeHelper.GetParent(element);
-            }
 
-            if (element is DataGridRow row)
-            {
-                _draggedItem = row.DataContext;
-            }
+            _draggedItem = element is DataGridRow row ? row.DataContext : null;
         }
 
         private void OnMouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed && _draggedItem != null)
+            if (e.LeftButton != MouseButtonState.Pressed || _draggedItem == null) return;
+
+            // ✅ Solo reordenar si el mouse está dentro del DataGrid
+            var pos = e.GetPosition(AssociatedObject);
+            if (pos.X < 0 || pos.Y < 0 ||
+                pos.X > AssociatedObject.ActualWidth ||
+                pos.Y > AssociatedObject.ActualHeight)
             {
-                var currentPoint = e.GetPosition(AssociatedObject);
-                var distance = Math.Sqrt(Math.Pow(currentPoint.X - _dragStartPoint.X, 2) +
-                                       Math.Pow(currentPoint.Y - _dragStartPoint.Y, 2));
+                _draggedItem = null;  // cancelar si salió del DataGrid
+                return;
+            }
 
-                if (distance > 5)
-                {
-                    var selectedItems = AssociatedObject.SelectedItems.Cast<object>().ToList();
-                    if (!selectedItems.Contains(_draggedItem))
-                    {
-                        selectedItems = new List<object> { _draggedItem };
-                    }
+            var currentPoint = e.GetPosition(AssociatedObject);
+            var distance = Math.Sqrt(
+                Math.Pow(currentPoint.X - _dragStartPoint.X, 2) +
+                Math.Pow(currentPoint.Y - _dragStartPoint.Y, 2));
 
-                    var data = new DataObject("PROJECT_ITEMS_REORDER", selectedItems);
-                    DragDrop.DoDragDrop(AssociatedObject, data, DragDropEffects.Move);
-                    _draggedItem = null;
-                }
+            if (distance > 5)
+            {
+                var selectedItems = AssociatedObject.SelectedItems.Cast<object>().ToList();
+                if (!selectedItems.Contains(_draggedItem))
+                    selectedItems = new List<object> { _draggedItem };
+
+                var data = new DataObject("PROJECT_ITEMS_REORDER", selectedItems);
+                DragDrop.DoDragDrop(AssociatedObject, data, DragDropEffects.Move);
+                _draggedItem = null;
             }
         }
 

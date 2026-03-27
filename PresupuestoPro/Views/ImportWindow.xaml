@@ -1,0 +1,101 @@
+﻿<!-- ImportWindow.xaml -->
+<Window x:Class="PresupuestoPro.Views.ImportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Importar proyecto .DDP"
+        Width="520" Height="340"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Título -->
+        <TextBlock Grid.Row="0"
+                   Text="Importar archivo .DDP"
+                   FontSize="18" FontWeight="Bold"
+                   Foreground="#1565C0" Margin="0,0,0,16"/>
+
+        <!-- Selector de archivo -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="TxtFilePath"
+                     Grid.Column="0"
+                     IsReadOnly="True"
+                     Padding="8,6"
+                     FontSize="13"
+                     Background="#F5F5F5"
+                     BorderBrush="#BDBDBD"
+                     Text="Seleccione un archivo .DDP..."
+                     Foreground="#9E9E9E"/>
+
+            <Button Grid.Column="1"
+                    Content="Examinar..."
+                    Click="BtnBrowse_Click"
+                    Padding="12,6"
+                    Margin="8,0,0,0"
+                    Background="#1976D2"
+                    Foreground="White"
+                    FontWeight="SemiBold"/>
+        </Grid>
+
+        <!-- Nombre de categoría (editable, se llena automático) -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,12">
+            <TextBlock Text="Nombre del proyecto:"
+                       FontSize="12" Foreground="#555"
+                       Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtCategoryName"
+                     Padding="8,6"
+                     FontSize="13"
+                     BorderBrush="#BDBDBD"/>
+        </StackPanel>
+
+        <!-- Área de progreso/mensajes -->
+        <Border Grid.Row="3"
+                Background="#F5F5F5"
+                BorderBrush="#E0E0E0"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="12"
+                Margin="0,0,0,16">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="TxtProgress"
+                           Text="Seleccione un archivo .DDP para comenzar."
+                           FontSize="12"
+                           Foreground="#555"
+                           TextWrapping="Wrap"/>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Botones -->
+        <StackPanel Grid.Row="4"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button x:Name="BtnImport"
+                    Content="Importar"
+                    Click="BtnImport_Click"
+                    IsEnabled="False"
+                    Padding="20,8"
+                    Margin="0,0,8,0"
+                    Background="#1976D2"
+                    Foreground="White"
+                    FontWeight="SemiBold"/>
+            <Button Content="Cerrar"
+                    Click="BtnClose_Click"
+                    Padding="20,8"
+                    Background="White"
+                    BorderBrush="#BDBDBD"
+                    BorderThickness="1"/>
+        </StackPanel>
+    </Grid>
+</Window>

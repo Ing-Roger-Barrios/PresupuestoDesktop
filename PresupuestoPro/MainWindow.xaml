@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:viewmodels="clr-namespace:PresupuestoPro.ViewModels"
+        xmlns:converters="clr-namespace:PresupuestoPro.Converters"
         xmlns:local="clr-namespace:PresupuestoPro" 
         xmlns:behaviors="clr-namespace:PresupuestoPro.Behaviors"
         mc:Ignorable="d"
@@ -15,6 +16,144 @@
          <viewmodels:MainViewModel />
         
     </Window.DataContext> -->
+
+    <Window.Resources>
+        <converters:SubtractWidthConverter x:Key="SubtractWidthConverter"/>
+        <Style x:Key="UserCatalogCategoryTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#2E7D32"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="Foreground" Value="White"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="UserCatalogModuleTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#388E3C"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="Foreground" Value="White"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="UserCatalogItemTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#1B5E20"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="Foreground" Value="White"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="UserCatalogMutedTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="Gray"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="Foreground" Value="White"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CatalogResourceBadgeStyle" TargetType="Border">
+            <Setter Property="Background" Value="#FFF3E0"/>
+            <Setter Property="BorderBrush" Value="#FB8C00"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="MinWidth" Value="62"/>
+            <Setter Property="Margin" Value="5,0,6,0"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tipo}" Value="ManoObra">
+                    <Setter Property="Background" Value="#E3F2FD"/>
+                    <Setter Property="BorderBrush" Value="#1E88E5"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tipo}" Value="Equipo">
+                    <Setter Property="Background" Value="#F3E5F5"/>
+                    <Setter Property="BorderBrush" Value="#8E24AA"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CatalogResourceBadgeTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#E65100"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tipo}" Value="ManoObra">
+                    <Setter Property="Foreground" Value="#1565C0"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tipo}" Value="Equipo">
+                    <Setter Property="Foreground" Value="#6A1B9A"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="Foreground" Value="#1F1F1F"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CatalogPrimaryTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#1F1F1F"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="Foreground" Value="White"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CatalogMutedTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#6B7280"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="Foreground" Value="#E5EEF9"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CatalogPriceTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#1B5E20"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="Foreground" Value="White"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CatalogNodeBadgeStyle" TargetType="Border">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="MinWidth" Value="44"/>
+            <Setter Property="Margin" Value="5,0,6,0"/>
+        </Style>
+        <Style x:Key="CatalogModuleBadgeStyle" TargetType="Border" BasedOn="{StaticResource CatalogNodeBadgeStyle}">
+            <Setter Property="Background" Value="#E3F2FD"/>
+            <Setter Property="BorderBrush" Value="#1E88E5"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style x:Key="CatalogItemBadgeStyle" TargetType="Border" BasedOn="{StaticResource CatalogNodeBadgeStyle}">
+            <Setter Property="Background" Value="#E8F5E9"/>
+            <Setter Property="BorderBrush" Value="#43A047"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style x:Key="CatalogModuleBadgeTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#1565C0"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="Foreground" Value="#1F1F1F"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CatalogItemBadgeTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#2E7D32"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="Foreground" Value="#1F1F1F"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -93,6 +232,29 @@
                             Background="#1976D2" Foreground="White" 
                             FontWeight="SemiBold" Padding="12,6"
                             Margin="0,0,8,0"/>
+                    <!-- Guardar -->
+                    <Button Content="💾 Guardar"
+        Command="{Binding SaveProjectCommand}"
+        Background="#1976D2" Foreground="White"
+        FontWeight="SemiBold" Padding="12,6"
+        Margin="8,0,0,0"
+        ToolTip="Guardar proyecto (Ctrl+S)"/>
+
+                    <!-- Guardar como -->
+                    <Button Content="💾 Guardar como..."
+        Command="{Binding SaveProjectAsCommand}"
+        Background="White" BorderBrush="#1976D2" BorderThickness="1"
+        Foreground="#1976D2" FontWeight="SemiBold" Padding="12,6"
+        Margin="4,0,0,0"
+        ToolTip="Guardar proyecto como..."/>
+
+                    <!-- Abrir -->
+                    <Button Content="📂 Abrir .cos"
+        Command="{Binding OpenProjectCommand}"
+        Background="White" BorderBrush="#1976D2" BorderThickness="1"
+        Foreground="#1976D2" FontWeight="SemiBold" Padding="12,6"
+        Margin="4,0,0,0"
+        ToolTip="Abrir proyecto guardado (.cos)"/>
                     <!-- Botón condicional según estado -->
                     <Button Content="{Binding UpdateButtonContent}"
                             Command="{Binding SyncCatalogCommand}"
@@ -109,6 +271,17 @@
             <!-- Grupo: Configuración -->
             <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,0,15,0">
                 <StackPanel Orientation="Horizontal" Margin="8,4">
+
+                    <Button Content="📂 Abrir .DDP"
+                     Command="{Binding ImportDdpCommand}"
+                     Background="#388E3C"
+                     Foreground="White"
+                     FontWeight="SemiBold"
+                     Padding="12,6"
+                     Margin="8,0,0,0"
+                     ToolTip="Abrir proyecto desde archivo .DDP (Prescom)"/>
+
+
                     <Button Content="Configurar Norma SABS" 
                             Command="{Binding ConfigurePricingCommand}"
                             Background="#1976D2" Foreground="White" 
@@ -140,6 +313,7 @@
                        FontSize="14"
                        Margin="20,0,0,0"/>
             <Button Content="Debug Data" Click="DebugData_Click" Margin="10"/>
+
         </StackPanel>
 
         <!-- Separador -->
@@ -148,88 +322,512 @@
         <!-- CONTENIDO PRINCIPAL -->
         <Grid Grid.Row="3" Margin="10">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="350"/>
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="500"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Panel: Catálogo -->
-            <!-- Panel: Catálogo -->
+            <!-- Panel: Catálogo — DOS SECCIONES diferenciadas -->
             <GroupBox Header="Catálogo de Partidas" Grid.Column="0">
-                <TreeView ItemsSource="{Binding CatalogGroups}" Margin="10"
-              PreviewMouseLeftButtonDown="TreeView_PreviewMouseLeftButtonDown"
-              PreviewMouseMove="TreeView_PreviewMouseMove">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="32*"/>
+                        <ColumnDefinition Width="101*"/>
+                        <ColumnDefinition Width="11*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- Buscador -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Opciones de búsqueda -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Barra de selección -->
+                        <RowDefinition Height="*"/>
+                        <!-- TreeView -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Botones CRUD -->
+                    </Grid.RowDefinitions>
 
-                    <!-- Nivel 1: Categoría -->
-                    <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate ItemsSource="{Binding Items}">
-                            <StackPanel Orientation="Horizontal">
-                                <CheckBox IsChecked="{Binding IsSelected}" Visibility="Collapsed"/>
-                                <TextBlock Text="📁" Margin="0,0,5,0"/>
-                                <TextBlock Text="{Binding Name}" FontWeight="Bold"
-                               MouseDown="Category_MouseDown"/>
-                                <!-- <TextBlock Text=" - " Foreground="Gray"/>
-                                <TextBlock Text="{Binding Description}" FontStyle="Italic" Foreground="Gray"/>-->
+                    <!-- ── Buscador ───────────────────────────────────────────── -->
+                    <TextBox Grid.Row="0"
+                 x:Name="TxtBuscar"
+                 Margin="8,8,8,4"
+                 Padding="6,4"
+                 FontSize="12"
+                 Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                 Tag="🔍 Buscar partidas..." Grid.ColumnSpan="3">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value="">
+                                        <Setter Property="Foreground" Value="Gray"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+
+                    <Border Grid.Row="1"
+                            Grid.ColumnSpan="3"
+                            Margin="8,0,8,6"
+                            Padding="8,6"
+                            CornerRadius="6"
+                            Background="#F5F5F5"
+                            BorderBrush="#DADADA"
+                            BorderThickness="1">
+                        <DockPanel LastChildFill="False">
+                            <WrapPanel VerticalAlignment="Center">
+                                <TextBlock Text="Buscar en:"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                                <CheckBox Content="Categorías"
+                                          IsChecked="{Binding SearchCategories}"
+                                          Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                                <CheckBox Content="Módulos"
+                                          IsChecked="{Binding SearchModules}"
+                                          Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                                <CheckBox Content="Items"
+                                          IsChecked="{Binding SearchItems}"
+                                          Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                                <CheckBox Content="Recursos"
+                                          IsChecked="{Binding SearchResources}"
+                                          VerticalAlignment="Center"/>
+                                <TextBlock Text="Buscando..."
+           Foreground="#1565C0"
+           FontWeight="SemiBold"
+           Margin="0,0,8,0"
+           Visibility="{Binding IsSearching, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                 
+                                <Button Content="Limpiar búsqueda"
+        Command="{Binding ClearSearchCommand}"
+        Margin="12,0,0,0"
+        Padding="10,4"
+        Background="White"
+        BorderBrush="#9E9E9E"
+        Foreground="#424242"/>
+                            </WrapPanel>
+
+                            <StackPanel Orientation="Horizontal"
+                                        DockPanel.Dock="Right"
+                                        VerticalAlignment="Center">
+                                
                             </StackPanel>
+                        </DockPanel>
+                    </Border>
 
-                            <!-- Nivel 2: Módulo -->
-                            <HierarchicalDataTemplate.ItemTemplate>
+                    <Border Grid.Row="2"
+                            Grid.ColumnSpan="3"
+                            Margin="8,0,8,6"
+                            Padding="8,6"
+                            CornerRadius="6"
+                            Background="#E3F2FD"
+                            BorderBrush="#90CAF9"
+                            BorderThickness="1"
+                            Visibility="{Binding HasCatalogSelection, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <DockPanel LastChildFill="False">
+                            <TextBlock Text="{Binding SelectedCatalogItemsSummary}"
+                                       VerticalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Foreground="#0D47A1"/>
+                            <Button Content="Deseleccionar todo"
+                                    Command="{Binding ClearCatalogSelectionCommand}"
+                                    Margin="12,0,0,0"
+                                    Padding="10,4"
+                                    Background="White"
+                                    BorderBrush="#1976D2"
+                                    Foreground="#1976D2"
+                                    DockPanel.Dock="Right"/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- ── TreeView con dos secciones ────────────────────────── -->
+                    <Grid Grid.Row="3" Grid.ColumnSpan="3" Margin="4,0,4,4">
+                        <TreeView SelectedItemChanged="CatalogTreeView_SelectedItemChanged"
+                                  PreviewMouseLeftButtonDown="TreeView_PreviewMouseLeftButtonDown"
+                                  VirtualizingStackPanel.IsVirtualizing="True"
+                                  VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.CanContentScroll="True"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  PreviewMouseMove="TreeView_PreviewMouseMove">
+
+                        <!-- ╔══════════════════════════════════════════════╗ -->
+                        <!-- ║  SECCIÓN 1: Catálogo del Servidor            ║ -->
+                        <!-- ╚══════════════════════════════════════════════╝ -->
+                        <TreeViewItem x:Name="SeccionServidor"
+                          IsExpanded="True" >
+                            <TreeViewItem.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🌐" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Catálogo Servidor"
+                                   FontWeight="Bold" FontSize="13"
+                                   Foreground="#1565C0"
+                                   VerticalAlignment="Center"/>
+                                    <Border Background="#1565C0" CornerRadius="8"
+                                Padding="5,1" Margin="8,0,0,0">
+                                        <TextBlock Text="{Binding CatalogGroups.Count}"
+                                       Foreground="White" FontSize="10"
+                                       FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                            </TreeViewItem.Header>
+
+                            <TreeViewItem.ItemsSource>
+                                <Binding Path="CatalogGroups"/>
+                            </TreeViewItem.ItemsSource>
+                            <TreeViewItem.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="Visibility"
+                                            Value="{Binding IsVisibleInSearch, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <Setter Property="IsExpanded"
+                                            Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                </Style>
+                            </TreeViewItem.ItemContainerStyle>
+
+                            <!-- Nivel 1: Categoría servidor -->
+                            <TreeViewItem.ItemTemplate>
                                 <HierarchicalDataTemplate ItemsSource="{Binding Items}">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="📁" Margin="5,0,5,0"/>
-                                        <CheckBox IsChecked="{Binding IsSelected}" 
-                                      PreviewMouseDown="ModuleCheckbox_PreviewMouseDown"/>
-                                        
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                       MouseDown="Module_MouseDown"/>
-                                        <!--<TextBlock Text=" - " Foreground="Gray"/>
-                                        <TextBlock Text="{Binding Description}" FontStyle="Italic" Foreground="Gray"/> -->
+
+                                        <TextBlock Text="📁" Margin="0,0,5,0"/>
+
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontWeight="Bold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   TextWrapping="NoWrap"
+                                                   ToolTip="{Binding Name}"
+                                                   MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=TreeView}, Path=ActualWidth, Converter={StaticResource SubtractWidthConverter}, ConverterParameter=90}"/>
+
                                     </StackPanel>
 
-                                    <!-- Nivel 3: Item -->
+                                    <!-- Nivel 2: Módulo -->
+                                    <HierarchicalDataTemplate.ItemContainerStyle>
+                                        <Style TargetType="TreeViewItem">
+                                            <Setter Property="Visibility"
+                                                    Value="{Binding IsVisibleInSearch, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                            <Setter Property="IsExpanded"
+                                                    Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                        </Style>
+                                    </HierarchicalDataTemplate.ItemContainerStyle>
                                     <HierarchicalDataTemplate.ItemTemplate>
-                                        <HierarchicalDataTemplate ItemsSource="{Binding Recursos}">
+                                        <HierarchicalDataTemplate ItemsSource="{Binding Items}">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="📄" Margin="5,0,5,0"/>
-                                                <CheckBox IsChecked="{Binding IsSelected}" 
-                                              PreviewMouseDown="ItemCheckbox_PreviewMouseDown"/>
-                                                
-                                                <TextBlock Text="{Binding Display}"
-                                               MouseDown="Item_MouseDown"/>
-                                                <TextBlock Text=" | " Foreground="Gray"/>
-                                                <TextBlock Text="{Binding Unidad}" Foreground="Gray"/>
+                                                <Border Style="{StaticResource CatalogModuleBadgeStyle}">
+                                                    <TextBlock Text="MOD" Style="{StaticResource CatalogModuleBadgeTextStyle}"/>
+                                                </Border>
+                                                <CheckBox IsChecked="{Binding IsSelected}"
+                                                          PreviewMouseDown="ModuleCheckbox_PreviewMouseDown"
+                                                          Checked="CatalogSelectionCheckBox_Changed"
+                                                          Unchecked="CatalogSelectionCheckBox_Changed"/>
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           TextWrapping="NoWrap"
+                                                           ToolTip="{Binding Name}"
+                                                           MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=TreeView}, Path=ActualWidth, Converter={StaticResource SubtractWidthConverter}, ConverterParameter=130}"/>
                                             </StackPanel>
 
-                                            <!-- Nivel 4: Recurso -->
+                                            <!-- Nivel 3: Item -->
+                                            <HierarchicalDataTemplate.ItemContainerStyle>
+                                                <Style TargetType="TreeViewItem">
+                                                    <Setter Property="Visibility"
+                                                            Value="{Binding IsVisibleInSearch, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                    <Setter Property="IsExpanded"
+                                                            Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                                </Style>
+                                            </HierarchicalDataTemplate.ItemContainerStyle>
                                             <HierarchicalDataTemplate.ItemTemplate>
-                                                <DataTemplate>
+                                                <HierarchicalDataTemplate ItemsSource="{Binding Recursos}">
                                                     <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="•" Margin="5,0,5,0"/>
-                                                        <CheckBox IsChecked="{Binding IsSelected}" 
-                                                      PreviewMouseDown="ResourceCheckbox_PreviewMouseDown"/>
-                                                        
-                                                        <TextBlock Text="{Binding Nombre}"
-                                                       MouseDown="Resource_MouseDown"/>
-                                                        <TextBlock Text=" - " Foreground="Gray"/>
-                                                        <TextBlock Text="{Binding Tipo}" Foreground="Gray"/>
+                                                        <Border Style="{StaticResource CatalogItemBadgeStyle}">
+                                                            <TextBlock Text="ITEM" Style="{StaticResource CatalogItemBadgeTextStyle}"/>
+                                                        </Border>
+                                                        <CheckBox IsChecked="{Binding IsSelected}"
+                                                                  PreviewMouseDown="ItemCheckbox_PreviewMouseDown"
+                                                                  Checked="CatalogSelectionCheckBox_Changed"
+                                                                  Unchecked="CatalogSelectionCheckBox_Changed"/>
+                                                        <TextBlock Text="{Binding DisplayText}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   TextWrapping="NoWrap"
+                                                                   ToolTip="{Binding DisplayText}"
+                                                                   MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=TreeView}, Path=ActualWidth, Converter={StaticResource SubtractWidthConverter}, ConverterParameter=190}"/>
                                                         <TextBlock Text=" | " Foreground="Gray"/>
-                                                        <TextBlock Text="{Binding PrecioUnitarioOriginal, StringFormat=C}" Foreground="Green"/>
+                                                        <TextBlock Text="{Binding Unidad}" Foreground="Gray"/>
                                                     </StackPanel>
-                                                </DataTemplate>
+
+                                                    <!-- Nivel 4: Recurso -->
+                                                    <HierarchicalDataTemplate.ItemContainerStyle>
+                                                        <Style TargetType="TreeViewItem">
+                                                            <Setter Property="Visibility"
+                                                                    Value="{Binding IsVisibleInSearch, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                        </Style>
+                                                    </HierarchicalDataTemplate.ItemContainerStyle>
+                                                    <HierarchicalDataTemplate.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <Border Style="{StaticResource CatalogResourceBadgeStyle}">
+                                                                    <TextBlock Text="{Binding TipoBadgeLabel}" Style="{StaticResource CatalogResourceBadgeTextStyle}"/>
+                                                                </Border>
+                                                                <TextBlock Text="{Binding Nombre}"
+                                                                           Style="{StaticResource CatalogPrimaryTextStyle}"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           TextWrapping="NoWrap"
+                                                                           ToolTip="{Binding Nombre}"
+                                                                           MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=TreeView}, Path=ActualWidth, Converter={StaticResource SubtractWidthConverter}, ConverterParameter=210}"/>
+                                                                <TextBlock Text=" | " Style="{StaticResource CatalogMutedTextStyle}"/>
+                                                                <TextBlock Text="{Binding Unidad}" Style="{StaticResource CatalogMutedTextStyle}"/>
+                                                                <TextBlock Text=" | " Style="{StaticResource CatalogMutedTextStyle}"/>
+                                                                <TextBlock Text="{Binding PrecioUnitarioOriginal, StringFormat=C}"
+                                                                           Style="{StaticResource CatalogPriceTextStyle}"/>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </HierarchicalDataTemplate.ItemTemplate>
+                                                </HierarchicalDataTemplate>
                                             </HierarchicalDataTemplate.ItemTemplate>
                                         </HierarchicalDataTemplate>
                                     </HierarchicalDataTemplate.ItemTemplate>
                                 </HierarchicalDataTemplate>
-                            </HierarchicalDataTemplate.ItemTemplate>
-                        </HierarchicalDataTemplate>
-                    </TreeView.ItemTemplate>
-                </TreeView>
+                            </TreeViewItem.ItemTemplate>
+                        </TreeViewItem>
+
+                        <!-- ╔══════════════════════════════════════════════╗ -->
+                        <!-- ║  SECCIÓN 2: Mi Catálogo (Usuario)            ║ -->
+                        <!-- ╚══════════════════════════════════════════════╝ -->
+                        <TreeViewItem x:Name="SeccionUsuario"
+                          IsExpanded="True"  >
+                            <TreeViewItem.Header>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="👤" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Mi Catálogo"
+                                       FontWeight="Bold" FontSize="13"
+                                       Foreground="#2E7D32"
+                                       VerticalAlignment="Center"/>
+                                        <Border Background="#2E7D32" CornerRadius="8"
+                                    Padding="5,1" Margin="8,0,0,0">
+                                            <TextBlock Text="{Binding UserCatalogGroups.Count}"
+                                           Foreground="White" FontSize="10"
+                                           FontWeight="Bold"/>
+                                        </Border>
+                                    </StackPanel>
+                                    <Border Margin="0,6,0,0"
+                                            Padding="8,6"
+                                            CornerRadius="6"
+                                            Background="#E8F5E9"
+                                            BorderBrush="#A5D6A7"
+                                            BorderThickness="1"
+                                            Visibility="{Binding HasUserCatalogSelection, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <DockPanel LastChildFill="False">
+                                            <TextBlock Text="{Binding SelectedUserCatalogItemsSummary}"
+                                                       VerticalAlignment="Center"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#1B5E20"/>
+                                            <Button Content="Deseleccionar todo"
+                                                    Command="{Binding ClearUserCatalogSelectionCommand}"
+                                                    Margin="12,0,0,0"
+                                                    Padding="10,4"
+                                                    Background="White"
+                                                    BorderBrush="#2E7D32"
+                                                    Foreground="#2E7D32"
+                                                    DockPanel.Dock="Right"/>
+                                        </DockPanel>
+                                    </Border>
+                                </StackPanel>
+                            </TreeViewItem.Header>
+
+                            <TreeViewItem.ItemsSource>
+                                <Binding Path="UserCatalogGroups"/>
+                            </TreeViewItem.ItemsSource>
+                            <TreeViewItem.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="Visibility"
+                                            Value="{Binding IsVisibleInSearch, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <Setter Property="IsExpanded"
+                                            Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                </Style>
+                            </TreeViewItem.ItemContainerStyle>
+
+                            <!-- Nivel 1: Categoría usuario -->
+                            <TreeViewItem.ItemTemplate>
+                                <HierarchicalDataTemplate ItemsSource="{Binding Items}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="📁" Margin="0,0,5,0" Style="{StaticResource UserCatalogCategoryTextStyle}"/>
+                                        <TextBlock Text="{Binding Nombre}"
+                                                   FontWeight="Bold"
+                                                   Style="{StaticResource UserCatalogCategoryTextStyle}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   TextWrapping="NoWrap"
+                                                   ToolTip="{Binding Nombre}"
+                                                   MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=TreeView}, Path=ActualWidth, Converter={StaticResource SubtractWidthConverter}, ConverterParameter=90}"/>
+                                    </StackPanel>
+
+                                    <!-- Nivel 2: Módulo usuario -->
+                                    <HierarchicalDataTemplate.ItemContainerStyle>
+                                        <Style TargetType="TreeViewItem">
+                                            <Setter Property="Visibility"
+                                                    Value="{Binding IsVisibleInSearch, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                            <Setter Property="IsExpanded"
+                                                    Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                        </Style>
+                                    </HierarchicalDataTemplate.ItemContainerStyle>
+                                    <HierarchicalDataTemplate.ItemTemplate>
+                                        <HierarchicalDataTemplate ItemsSource="{Binding Items}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource CatalogModuleBadgeStyle}">
+                                                    <TextBlock Text="MOD" Style="{StaticResource CatalogModuleBadgeTextStyle}"/>
+                                                </Border>
+                                                <CheckBox IsChecked="{Binding IsSelected}"
+                                                            PreviewMouseDown="UserModuleCheckbox_PreviewMouseDown"
+                                                            Checked="UserCatalogSelectionCheckBox_Changed"
+                                                            Unchecked="UserCatalogSelectionCheckBox_Changed"/>
+                                                <TextBlock Text="{Binding Nombre}"
+                                                           FontWeight="SemiBold"
+                                                           Style="{StaticResource UserCatalogModuleTextStyle}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           TextWrapping="NoWrap"
+                                                           ToolTip="{Binding Nombre}"
+                                                           MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=TreeView}, Path=ActualWidth, Converter={StaticResource SubtractWidthConverter}, ConverterParameter=130}"/>
+                                            </StackPanel>
+
+                                            <!-- Nivel 3: Item usuario -->
+                                            <HierarchicalDataTemplate.ItemContainerStyle>
+                                                <Style TargetType="TreeViewItem">
+                                                    <Setter Property="Visibility"
+                                                            Value="{Binding IsVisibleInSearch, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                    <Setter Property="IsExpanded"
+                                                            Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                                </Style>
+                                            </HierarchicalDataTemplate.ItemContainerStyle>
+                                            <HierarchicalDataTemplate.ItemTemplate>
+                                                <HierarchicalDataTemplate ItemsSource="{Binding Recursos}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Border Style="{StaticResource CatalogItemBadgeStyle}">
+                                                            <TextBlock Text="ITEM" Style="{StaticResource CatalogItemBadgeTextStyle}"/>
+                                                        </Border>
+                                                        <CheckBox IsChecked="{Binding IsSelected}"
+                                                                PreviewMouseDown="UserItemCheckbox_PreviewMouseDown"
+                                                                Checked="UserCatalogSelectionCheckBox_Changed"
+                                                                Unchecked="UserCatalogSelectionCheckBox_Changed"/>
+                                                        <TextBlock Text="{Binding Display}"
+                                                                   Style="{StaticResource UserCatalogItemTextStyle}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   TextWrapping="NoWrap"
+                                                                   ToolTip="{Binding Display}"
+                                                                   MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=TreeView}, Path=ActualWidth, Converter={StaticResource SubtractWidthConverter}, ConverterParameter=190}"/>
+                                                        <TextBlock Text=" | " Style="{StaticResource UserCatalogMutedTextStyle}"/>
+                                                        <TextBlock Text="{Binding Unidad}" Style="{StaticResource UserCatalogMutedTextStyle}"/>
+                                                    </StackPanel>
+
+                                                    <!-- Nivel 4: Recurso usuario -->
+                                                    <HierarchicalDataTemplate.ItemContainerStyle>
+                                                        <Style TargetType="TreeViewItem">
+                                                            <Setter Property="Visibility"
+                                                                    Value="{Binding IsVisibleInSearch, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                        </Style>
+                                                    </HierarchicalDataTemplate.ItemContainerStyle>
+                                                    <HierarchicalDataTemplate.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <Border Style="{StaticResource CatalogResourceBadgeStyle}">
+                                                                    <TextBlock Text="{Binding TipoBadgeLabel}" Style="{StaticResource CatalogResourceBadgeTextStyle}"/>
+                                                                </Border>
+                                                                    <CheckBox IsChecked="{Binding IsSelected}"
+                                                                      PreviewMouseDown="UserResourceCheckbox_PreviewMouseDown"
+                                                                      Checked="UserCatalogSelectionCheckBox_Changed"
+                                                                      Unchecked="UserCatalogSelectionCheckBox_Changed"/>
+                                                                    <TextBlock Text="{Binding Nombre}"
+                                                                           Style="{StaticResource UserCatalogItemTextStyle}"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           TextWrapping="NoWrap"
+                                                                           ToolTip="{Binding Nombre}"
+                                                                           MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=TreeView}, Path=ActualWidth, Converter={StaticResource SubtractWidthConverter}, ConverterParameter=210}"/>
+                                                                <TextBlock Text=" | " Style="{StaticResource UserCatalogMutedTextStyle}"/>
+                                                                <TextBlock Text="{Binding Unidad}" Style="{StaticResource UserCatalogMutedTextStyle}"/>
+                                                                <TextBlock Text=" | " Style="{StaticResource UserCatalogMutedTextStyle}"/>
+                                                                <TextBlock Text="{Binding Precio, StringFormat=C}"
+                                                                           Style="{StaticResource UserCatalogItemTextStyle}"/>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </HierarchicalDataTemplate.ItemTemplate>
+                                                </HierarchicalDataTemplate>
+                                            </HierarchicalDataTemplate.ItemTemplate>
+                                        </HierarchicalDataTemplate>
+                                    </HierarchicalDataTemplate.ItemTemplate>
+                                </HierarchicalDataTemplate>
+                            </TreeViewItem.ItemTemplate>
+                        </TreeViewItem>
+
+                        </TreeView>
+
+                        <Border Background="#66FFFFFF"
+                                CornerRadius="8"
+                                Padding="16"
+                                Panel.ZIndex="10"
+                                Visibility="{Binding IsSearching, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Border HorizontalAlignment="Center"
+                                    VerticalAlignment="Top"
+                                    Margin="0,12,0,0"
+                                    Background="#0D47A1"
+                                    CornerRadius="10"
+                                    Padding="16,12"
+                                    MaxWidth="260">
+                                <StackPanel>
+                                    <TextBlock Text="Buscando en catálogos..."
+                                               Foreground="White"
+                                               FontWeight="SemiBold"
+                                               HorizontalAlignment="Center"
+                                               Margin="0,0,0,8"/>
+                                    <ProgressBar IsIndeterminate="True"
+                                                 Height="8"
+                                                 Foreground="#90CAF9"
+                                                 Background="#1565C0"/>
+                                </StackPanel>
+                            </Border>
+                        </Border>
+                    </Grid>
+
+                    <!-- ── Botones CRUD (solo para Mi Catálogo) ──────────────── -->
+                    <StackPanel Grid.Row="4"
+                    Orientation="Horizontal"
+                    Margin="10,8,8,8" Grid.ColumnSpan="3">
+                        <Button Content="＋ Categoría"
+                    Command="{Binding AddUserCategoriaCommand}"
+                    Background="#2E7D32" Foreground="White"
+                    FontSize="11" Padding="8,4" Margin="0,0,4,0"/>
+                        <Button Content="＋ Módulo"
+                    Command="{Binding AddUserModuloCommand}"
+                    Background="#388E3C" Foreground="White"
+                    FontSize="11" Padding="8,4" Margin="0,0,4,0"/>
+                        <Button Content="＋ Item"
+                    Command="{Binding AddUserItemCommand}"
+                    Background="#43A047" Foreground="White"
+                    FontSize="11" Padding="8,4" Margin="0,0,4,0"/>
+                        <Button Content="✏️ Editar"
+                    Command="{Binding EditUserNodeCommand}"
+                    Background="#1565C0" Foreground="White"
+                    FontSize="11" Padding="8,4" Margin="0,0,4,0"
+                    ToolTip="Editar elemento seleccionado"/>
+                        <Button Content="🗑"
+                    Command="{Binding DeleteUserNodeCommand}"
+                    Background="#C62828" Foreground="White"
+                    FontSize="11" Padding="8,4"
+                    ToolTip="Eliminar seleccionado"/>
+                    </StackPanel>
+                </Grid>
             </GroupBox>
 
+
             <!-- Separador -->
-            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"/>
+            <GridSplitter Grid.Column="1"
+                          Width="4"
+                          HorizontalAlignment="Stretch"
+                          ShowsPreview="True"/>
 
             <!-- Panel: Proyecto -->
             <!-- Panel: Proyecto -->
@@ -243,16 +841,30 @@
                 <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,0,15,0">
                     <StackPanel Orientation="Horizontal" Margin="8,4">
                         <Button Content="Agregar Módulo" 
-                    Command="{Binding AddModuleCommand}"
-                    Background="White" BorderBrush="#1976D2" BorderThickness="1"
-                    Foreground="#1976D2" FontWeight="SemiBold" Padding="12,6"/>
+                                Command="{Binding AddModuleCommand}"
+                                Background="White" BorderBrush="#1976D2" BorderThickness="1"
+                                Foreground="#1976D2" FontWeight="SemiBold" Padding="12,6"/>
 
-                        <!-- Subtotal del módulo -->
+                        <!-- Separador visual (opcional) -->
+                        <TextBlock Text="|" 
+                                   VerticalAlignment="Center"
+                                   Foreground="#BDBDBD"
+                                   Margin="5,0"/>
+
+                        <!-- 👇 NUEVO: Nombre del Proyecto -->
+                        <TextBlock Text="{Binding CurrentProjectName}"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   FontSize="18"
+                                   Foreground="#1976D2"
+                                   Margin="5,0,0,0"/>
+
+                        <!-- Subtotal del módulo 
                         <TextBlock Text="{Binding SelectedModule.Subtotal, StringFormat='📊 Subtotal: {0:C2}'}"
                        VerticalAlignment="Center"
                        FontWeight="Bold"
                        Foreground="#2E7D32"
-                       Margin="15,0,0,0"/>
+                       Margin="15,0,0,0"/>-->
                     </StackPanel>
                 </Border>
 
@@ -276,44 +888,54 @@
                             </DataTemplate>
                         </TabControl.ItemTemplate>
 
+                        <!-- REEMPLAZA el ContentTemplate completo -->
                         <TabControl.ContentTemplate>
                             <DataTemplate>
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
+                                        <!-- Subtotal -->
                                         <RowDefinition Height="*"/>
+                                        <!-- DataGrid — ocupa todo el espacio restante -->
                                     </Grid.RowDefinitions>
 
                                     <!-- Subtotal del módulo -->
-                                    <TextBlock Text="{Binding Subtotal, StringFormat='📊 Subtotal: {0:C2}'}"
-                                   VerticalAlignment="Center"
-                                   FontWeight="Bold"
-                                   Foreground="#2E7D32"
-                                   Margin="0,0,0,10"/>
+                                    <TextBlock Grid.Row="0"
+                       Text="{Binding Subtotal, StringFormat='📊 Subtotal: {0:C2}'}"
+                       VerticalAlignment="Center"
+                       FontWeight="Bold"
+                       Foreground="#2E7D32"
+                       Margin="0,0,0,10"/>
 
-                                    <!-- DataGrid editable -->
-                                    <DataGrid ItemsSource="{Binding Items}"
-                                              SelectedItem="{Binding DataContext.SelectedBudgetItem, RelativeSource={RelativeSource AncestorType=Window}}"
-                                              SelectionMode="Extended"
-                                              SelectionUnit="FullRow"
-                                              AutoGenerateColumns="False"
-                                              CanUserAddRows="False"
-                                              CanUserDeleteRows="True"
-                                              ColumnHeaderHeight="30"
-                                              RowHeight="30"
-                                              FontSize="13"
-                                              IsReadOnly="False"
-                                              AllowDrop="True"
-                                              VerticalAlignment="Top"
-                                                GridLinesVisibility="All"
-                                                HorizontalGridLinesBrush="#D3D3D3"
-                                                VerticalGridLinesBrush="#D3D3D3"
-                                              BorderBrush="#D3D3D3"
-                                                Background="White"
-                                                RowBackground="White"
-                                              
-                                                BorderThickness="0"
-                                              Drop="DataGridRow_Drop">
+                                    <!-- DataGrid — Grid.Row="1" es lo crítico para que tenga altura limitada -->
+                                    <DataGrid Grid.Row="1"
+                      ItemsSource="{Binding Items}"
+                      SelectedItem="{Binding DataContext.SelectedBudgetItem, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              SelectionChanged="ItemsDataGrid_SelectionChanged"
+                      SelectionMode="Extended"
+                      SelectionUnit="FullRow"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="True"
+                      VirtualizingStackPanel.IsVirtualizing="True"
+                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.CanContentScroll="True"
+                      ColumnHeaderHeight="30"
+                      RowHeight="30"
+                      FontSize="13"
+                      IsReadOnly="False"
+                      AllowDrop="True"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#D3D3D3"
+                      VerticalGridLinesBrush="#D3D3D3"
+                      BorderBrush="#D3D3D3"
+                      Background="White"
+                      RowBackground="White"
+                      BorderThickness="0"
+                      Drop="DataGridRow_Drop">
+
                                         <i:Interaction.Behaviors>
                                             <behaviors:DataGridDragDropBehavior />
                                         </i:Interaction.Behaviors>
@@ -327,7 +949,6 @@
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
-
                                             <Style TargetType="DataGridColumnHeader">
                                                 <Setter Property="Background" Value="#EAEAEA"/>
                                                 <Setter Property="BorderBrush" Value="#D3D3D3"/>
@@ -338,68 +959,116 @@
                                             </Style>
                                         </DataGrid.Resources>
 
-                                        <!-- Añadir estilo para las filas -->
                                         <DataGrid.RowStyle>
                                             <Style TargetType="DataGridRow">
                                                 <Setter Property="AllowDrop" Value="True"/>
-                                                
                                                 <EventSetter Event="Drop" Handler="DataGridRow_Drop"/>
-                                                
-                                                 
                                             </Style>
                                         </DataGrid.RowStyle>
+
+                                        <DataGrid.ContextMenu>
+                                            <ContextMenu>
+                                                <!-- Guardar item(s) seleccionados en Mi Catálogo -->
+                                                <MenuItem Header="💾 Guardar item(s) en Mi Catálogo"
+                                                  Command="{Binding PlacementTarget.DataContext,
+                                                            RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                  CommandParameter="items"
+                                                  Click="MenuGuardarItems_Click"/>
+
+                                                <!-- Guardar módulo completo -->
+                                                <MenuItem Header="📁 Guardar módulo completo en Mi Catálogo"
+                                                            Click="MenuGuardarModulo_Click"/>
+
+                                                <Separator/>
+
+                                                <!-- Duplicar -->
+                                                <MenuItem Header="📋 Duplicar item"
+                                                            Click="MenuDuplicarItem_Click"/>
+
+                                                <!-- Eliminar -->
+                                                <MenuItem Header="🗑 Eliminar item(s)"
+                                                            Click="MenuEliminarItems_Click"/>
+                                            </ContextMenu>
+                                        </DataGrid.ContextMenu>
 
                                         <DataGrid.Columns>
                                             <DataGridTemplateColumn Width="30">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
                                                         <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
-                                                          HorizontalAlignment="Center"
-                                                          VerticalAlignment="Center"/>
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
-                                            
-                                            <DataGridTextColumn Header="Código" 
-                                                    Binding="{Binding Code}" 
-                                                    Width="100" IsReadOnly="True"/>
 
-                                            <!-- Columna de Descripción con validación -->
+                                            <DataGridTextColumn Header="Código"
+                                        Binding="{Binding Code}"
+                                        Width="100" IsReadOnly="True"/>
+
                                             <DataGridTemplateColumn Header="Descripción" Width="*">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
-                                                        <TextBlock Text="{Binding Description}" 
-                                                                   Tag="{Binding}"
-                                                                   Foreground="{Binding IsDuplicate, Converter={StaticResource DuplicateToColorConverter}}"
-                                                                   ToolTip="{Binding DuplicateWarning}"/>
+                                                        <TextBlock Text="{Binding Description}"
+                                           Tag="{Binding}"
+                                           Foreground="{Binding IsDuplicate, Converter={StaticResource DuplicateToColorConverter}}"
+                                           ToolTip="{Binding DuplicateWarning}"/>
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
                                                 <DataGridTemplateColumn.CellEditingTemplate>
                                                     <DataTemplate>
                                                         <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
-                                                                         Background="{Binding IsDuplicate, Converter={StaticResource DuplicateToBackgroundConverter}}"
-                                                                         ToolTip="{Binding DuplicateWarning}"/>
+                                         Background="{Binding IsDuplicate, Converter={StaticResource DuplicateToBackgroundConverter}}"
+                                         ToolTip="{Binding DuplicateWarning}"/>
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellEditingTemplate>
                                             </DataGridTemplateColumn>
 
-                                            <DataGridTextColumn Header="Unidad" 
-                                                    Binding="{Binding Unit}" 
-                                                    Width="80" IsReadOnly="True"/>
+                                            <DataGridTextColumn Header="Unidad"
+                                        Binding="{Binding Unit}"
+                                        Width="80" IsReadOnly="True"/>
 
-                                            <DataGridTemplateColumn Header="Cantidad" Width="100">
+                                            <!--- <DataGridTemplateColumn Header="Cantidad" Width="100">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
                                                         <TextBox Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"
-                                                     VerticalContentAlignment="Center"
-                                                     Padding="4,2"/>
+                                         VerticalContentAlignment="Center"
+                                         Padding="4,2"/>
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
-                                            </DataGridTemplateColumn>
+                                            </DataGridTemplateColumn> -->
 
-                                            <DataGridTextColumn Header="Precio Unitario" 
-                                                    Binding="{Binding UnitPrice, StringFormat=C2}" 
-                                                    Width="120">
+                                            <DataGridTextColumn Header="Cantidad"
+                    Binding="{Binding Quantity, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"
+                    Width="100">
+                                                <DataGridTextColumn.ElementStyle>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                    </Style>
+                                                </DataGridTextColumn.ElementStyle>
+                                                <DataGridTextColumn.EditingElementStyle>
+                                                    <Style TargetType="TextBox">
+                                                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                                        <Setter Property="Padding" Value="4,2"/>
+                                                    </Style>
+                                                </DataGridTextColumn.EditingElementStyle>
+                                            </DataGridTextColumn>
+
+                                            <DataGridTextColumn Header="Precio Unitario"
+                                                Binding="{Binding UnitPrice, StringFormat=C2}"
+                                                Width="120"
+                                                IsReadOnly="True">
+                                                <DataGridTextColumn.ElementStyle>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                        <Setter Property="FontWeight" Value="Medium"/>
+                                                    </Style>
+                                                </DataGridTextColumn.ElementStyle>
+                                            </DataGridTextColumn>
+                                            <!---<DataGridTextColumn Header="Precio Unitario"
+                                                Binding="{Binding UnitPrice, StringFormat=C2}"
+                                                Width="120"
+                                                 >
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -412,11 +1081,11 @@
                                                         <Setter Property="Padding" Value="4,2"/>
                                                     </Style>
                                                 </DataGridTextColumn.EditingElementStyle>
-                                            </DataGridTextColumn>
+                                            </DataGridTextColumn>-->
 
-                                            <DataGridTextColumn Header="Total" 
-                                                    Binding="{Binding Total, StringFormat=C2}" 
-                                                    Width="120" IsReadOnly="True">
+                                            <DataGridTextColumn Header="Total"
+                                        Binding="{Binding Total, StringFormat=C2}"
+                                        Width="120" IsReadOnly="True">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -429,6 +1098,7 @@
                                 </Grid>
                             </DataTemplate>
                         </TabControl.ContentTemplate>
+
                     </TabControl>
 
                     <!-- Mensaje cuando no hay módulos -->
@@ -443,56 +1113,136 @@
             </Grid>
 
             <!-- Separador -->
-            <GridSplitter Grid.Column="3" Width="4" HorizontalAlignment="Stretch"/>
+            <GridSplitter Grid.Column="3"
+                          Width="4"
+                          HorizontalAlignment="Stretch"
+                          ShowsPreview="True"/>
 
             <!-- PANEL DERECHO: Recursos del item seleccionado -->
             <GroupBox Header="Recursos del Item" 
                       Grid.Column="4"
                       >
 
+
                 <!-- PANEL DERECHO: Recursos del item seleccionado -->
                 <DataGrid ItemsSource="{Binding SelectedBudgetItem.Resources}"
-          AutoGenerateColumns="False"
-          CanUserAddRows="False"
-          CanUserDeleteRows="False"
-          RowHeight="30"
-          FontSize="12">
+                          x:Name="RecursosGrid"
+                          SelectionMode="Extended"
+                          SelectionUnit="FullRow"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="True"
+                          VirtualizingStackPanel.IsVirtualizing="False"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                          ScrollViewer.CanContentScroll="True"
+                          ColumnHeaderHeight="30"
+                          RowHeight="30"
+                          FontSize="13"
+                          IsReadOnly="False"
+                          AllowDrop="True"
+                          GridLinesVisibility="All"
+                          HorizontalGridLinesBrush="#D3D3D3"
+                          VerticalGridLinesBrush="#D3D3D3"
+                          BorderBrush="#D3D3D3"
+                          Background="White"
+                          RowBackground="White"
+                          BorderThickness="0"
+                          Drop="RecursosGrid_Drop"
+                          DragOver="RecursosGrid_DragOver">                                 
+
+                    <!-- ── Agrupación por ResourceType ── -->
+                    <DataGrid.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.ContainerStyle>
+                                <Style TargetType="GroupItem">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="GroupItem">
+                                                <StackPanel>
+                                                    <!-- Encabezado del grupo -->
+                                                    <Grid Background="#E8F5E9" Margin="0,2,0,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="90"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- Nombre del tipo -->
+                                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Name, Converter={StaticResource ResourceTypeToLabelConverter}}"
+                                                   FontWeight="Bold"
+                                                   FontSize="12"
+                                                   Foreground="#1B5E20"
+                                                   Padding="8,4"
+                                                   VerticalAlignment="Center"/>
+
+                                                        <!-- Subtotal del grupo -->
+                                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Items, Converter={StaticResource GroupCostSumConverter}, StringFormat=C2}"
+                                                   FontWeight="Bold"
+                                                   FontSize="12"
+                                                   Foreground="#1B5E20"
+                                                   HorizontalAlignment="Right"
+                                                   Padding="0,4,8,4"
+                                                   VerticalAlignment="Center"/>
+                                                    </Grid>
+
+                                                    <!-- Filas del grupo -->
+                                                    <ItemsPresenter/>
+                                                </StackPanel>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </GroupStyle.ContainerStyle>
+                        </GroupStyle>
+                    </DataGrid.GroupStyle>
+
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Tipo" 
-                            Binding="{Binding ResourceType}" 
-                            Width="80" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Nombre" 
-                            Binding="{Binding ResourceName}" 
+                        <!-- Tipo eliminado — ahora es el encabezado del grupo -->
+
+                        <DataGridTextColumn Header="Nombre"
+                            Binding="{Binding ResourceName}"
                             Width="*" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Unidad" 
-                            Binding="{Binding Unit}" 
+
+                        <DataGridTextColumn Header="Unidad"
+                            Binding="{Binding Unit}"
                             Width="60" IsReadOnly="True"/>
 
-                        <!-- Rendimiento editable -->
-                        <DataGridTemplateColumn Header="Rendimiento" Width="90">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBox Text="{Binding Performance, UpdateSourceTrigger=PropertyChanged, StringFormat=N4}"
-                             VerticalContentAlignment="Center"
-                             Padding="4,2"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Rendimiento"
+                            Binding="{Binding Performance, UpdateSourceTrigger=PropertyChanged, StringFormat=N4}"
+                            Width="90">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                            <DataGridTextColumn.EditingElementStyle>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    <Setter Property="Padding" Value="4,2"/>
+                                </Style>
+                            </DataGridTextColumn.EditingElementStyle>
+                        </DataGridTextColumn>
 
-                        <!-- Precio Unitario editable -->
-                        <DataGridTemplateColumn Header="Precio Unit." Width="100">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBox Text="{Binding UnitPrice, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"
-                             VerticalContentAlignment="Center"
-                             Padding="4,2"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Precio Unit."
+                            Binding="{Binding UnitPrice, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"
+                            Width="100">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                            <DataGridTextColumn.EditingElementStyle>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    <Setter Property="Padding" Value="4,2"/>
+                                </Style>
+                            </DataGridTextColumn.EditingElementStyle>
+                        </DataGridTextColumn>
 
-                        <!-- Costo calculado -->
-                        <DataGridTextColumn Header="Costo" 
-                            Binding="{Binding PartialCost, StringFormat=C2}" 
+                        <DataGridTextColumn Header="Costo"
+                            Binding="{Binding PartialCost, StringFormat=C2}"
                             Width="90" IsReadOnly="True">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
@@ -502,6 +1252,7 @@
                         </DataGridTextColumn>
                     </DataGrid.Columns>
                 </DataGrid>
+
             </GroupBox>
         </Grid>
     </Grid>

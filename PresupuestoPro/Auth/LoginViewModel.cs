@@ -22,7 +22,7 @@ namespace PresupuestoPro.ViewModels
 
 
         // Añade esta propiedad calculada
-        public bool IsNotBusy => !_isBusy;
+        public bool IsNotBusy => !IsBusy;
 
         [ObservableProperty]
         private string? _errorMessage;

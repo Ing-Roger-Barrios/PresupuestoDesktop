@@ -13,7 +13,12 @@ namespace PresupuestoPro.Services.Project
 
         public static event Action<string, decimal>? ResourcePriceChanged;
 
-        // 👇 NUEVA CLAVE: "Tipo|Nombre|Unidad"
+        /// <summary>
+        /// Suspende el disparo de ResourcePriceChanged durante cargas masivas
+        /// (.cos, .ddp) para evitar la cascada de eventos entre 1000+ recursos.
+        /// </summary>
+        public static bool IsSuspended { get; set; } = false;
+
         public static string GetResourceKey(string resourceType, string resourceName, string unit)
         {
             return $"{resourceType}|{resourceName}|{unit}";
@@ -23,7 +28,10 @@ namespace PresupuestoPro.Services.Project
         {
             var key = GetResourceKey(resourceType, resourceName, unit);
             _globalPrices[key] = price;
-            ResourcePriceChanged?.Invoke(key, price);
+
+            // ✅ Solo disparar el evento si no estamos en modo suspendido
+            if (!IsSuspended)
+                ResourcePriceChanged?.Invoke(key, price);
         }
 
         public static decimal GetGlobalPrice(string resourceType, string resourceName, string unit)

@@ -10,6 +10,8 @@ namespace PresupuestoPro.ViewModels
 {
     public partial class CatalogGroupViewModel : ObservableObject
     {
+        private string _searchText = string.Empty;
+
         public CatalogGroupViewModel() { }
 
         public CatalogGroupViewModel(string name, string description)
@@ -30,5 +32,23 @@ namespace PresupuestoPro.ViewModels
         // 👇 NUEVO: Para selección múltiple
         [ObservableProperty]
         private bool _isSelected;
+
+        [ObservableProperty]
+        private bool _isVisibleInSearch = true;
+
+        [ObservableProperty]
+        private bool _isExpanded;
+
+        public string SearchText => _searchText;
+
+        partial void OnNameChanged(string value) => UpdateSearchText();
+
+        partial void OnDescriptionChanged(string value) => UpdateSearchText();
+
+        private void UpdateSearchText()
+        {
+            _searchText = $"{Name} {Description}";
+            OnPropertyChanged(nameof(SearchText));
+        }
     }
 }

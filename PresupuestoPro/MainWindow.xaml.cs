@@ -6,7 +6,6 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Collections.ObjectModel;
-using System.Windows.Documents;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -16,6 +15,8 @@ using PresupuestoPro.ViewModels.Project;
 using System.ComponentModel;
 using System.IO;
 using System.Windows.Controls.Primitives;
+using PresupuestoPro.ViewModels.UserCatalog;
+using PresupuestoPro.Services.Project;
 
 namespace PresupuestoPro
 {
@@ -27,6 +28,7 @@ namespace PresupuestoPro
         private Point _dragStartPoint;
         private bool _isDragging = false;
         private UIElement _dragSource;
+        private object? _dragSourceNode;
  
 
 
@@ -37,6 +39,13 @@ namespace PresupuestoPro
             OnApplyTemplate();
         }
 
+        private void CatalogTreeView_SelectedItemChanged(object sender,
+            RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (DataContext is MainViewModel vm)
+                vm.SelectedUserNode = e.NewValue;
+        }
+
 
         // O simplemente validar al salir del campo
         private void DescriptionTextBox_LostFocus(object sender, RoutedEventArgs e)
@@ -44,6 +53,34 @@ namespace PresupuestoPro
             if (DataContext is MainViewModel mainVm && mainVm.SelectedModule != null)
             {
                 mainVm.ValidateModuleDuplicates(mainVm.SelectedModule);
+            }
+        }
+
+        private void ItemsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Pequeño delay para que el binding actualice ItemsSource primero
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.DataBind,
+                new Action(AplicarAgrupacionRecursos));
+        }
+
+        private void AplicarAgrupacionRecursos()
+        {
+            if (RecursosGrid.ItemsSource == null) return;
+
+            var cvs = CollectionViewSource.GetDefaultView(RecursosGrid.ItemsSource);
+            if (cvs == null) return;
+
+            cvs.GroupDescriptions.Clear();
+            cvs.GroupDescriptions.Add(new PropertyGroupDescription("ResourceType"));
+
+            // Sin SortDescriptions — el orden viene de la colección directamente
+            cvs.SortDescriptions.Clear();
+
+            if (cvs is System.Windows.Data.ListCollectionView lcv)
+            {
+                lcv.IsLiveSorting = false;
+                lcv.IsLiveGrouping = false;
+                lcv.IsLiveFiltering = false;
             }
         }
 
@@ -157,24 +194,337 @@ namespace PresupuestoPro
         private void TreeView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _dragStartPoint = e.GetPosition(null);
-            _dragSource = e.OriginalSource as UIElement;
+            _isDragging = false;
+            _dragSourceNode = FindDragSourceNode(e.OriginalSource as DependencyObject);
         }
 
         private void TreeView_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed && !_isDragging)
-            {
-                var currentPoint = e.GetPosition(null);
-                var distance = Math.Sqrt(Math.Pow(currentPoint.X - _dragStartPoint.X, 2) +
-                                       Math.Pow(currentPoint.Y - _dragStartPoint.Y, 2));
+            if (e.LeftButton != MouseButtonState.Pressed || _isDragging) return;
 
-                if (distance > 5 && _dragSource != null)
+            var pos = e.GetPosition(null);
+            var diff = _dragStartPoint - pos;
+
+            if (Math.Abs(diff.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(diff.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+
+            var vm = DataContext as MainViewModel;
+            if (vm == null) return;
+
+            _isDragging = true;
+            try
+            {
+                // ── Detectar si el nodo seleccionado es del usuario o del servidor ──
+
+                // Primero verificar catálogo USUARIO
+                // Primero verificar selección múltiple por checkboxes
+                var selectedUserModules = GetSelectedUserModules();
+                if (selectedUserModules.Count > 0)
                 {
-                    _isDragging = true;
-                    // El arrastre real se maneja en los eventos específicos
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.UserModule,
+                        selectedUserModules.First(),
+                        selectedUserModules.Cast<object>().ToList());
+                    return;
                 }
+
+                var selectedUserItems = GetSelectedUserItems();
+                if (selectedUserItems.Count > 0)
+                {
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.UserItem,
+                        selectedUserItems.First(),
+                        selectedUserItems.Cast<object>().ToList());
+                    return;
+                }
+                var selectedUserResources = vm.UserCatalogGroups
+                    .SelectMany(c => c.Modulos)
+                    .SelectMany(m => m.Items)
+                    .SelectMany(i => i.Recursos)
+                    .Where(r => r.IsSelected)
+                    .ToList();
+
+                if (selectedUserResources.Count > 0)
+                {
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.UserResource,
+                        selectedUserResources.First(),
+                        selectedUserResources.Cast<object>().ToList());
+                    return;
+                }
+
+                // Si no hay selección múltiple, usar el nodo seleccionado simple
+                switch (vm.SelectedUserNode)
+                {
+                    case UserCategoriaViewModel cat:
+                        DragDropService.StartDrag(sender as DependencyObject,
+                            DragDropType.UserCategory, cat);
+                        return;
+                    case UserModuloViewModel mod:
+                        DragDropService.StartDrag(sender as DependencyObject,
+                            DragDropType.UserModule, mod, new List<object> { mod });
+                        return;
+                    case UserItemViewModel item:
+                        DragDropService.StartDrag(sender as DependencyObject,
+                            DragDropType.UserItem, item, new List<object> { item });
+                        return;
+                }
+
+                // Si no es usuario, intentar catálogo SERVIDOR
+                // (lógica existente que ya tenías)
+                IniciarDragServidor(sender, vm);
+            }
+            finally
+            {
+                _isDragging = false;
             }
         }
+
+        private void RecursosGrid_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent("DRAG_DROP_DATA"))
+            {
+                var data = e.Data.GetData("DRAG_DROP_DATA") as DragDropData;
+                // Solo aceptar recursos, no items ni módulos
+                if (data?.Type == DragDropType.Resource ||
+                    data?.Type == DragDropType.UserResource ||
+                    data?.Type == DragDropType.ServerResource)
+                {
+                    e.Effects = DragDropEffects.Copy;
+                    e.Handled = true;
+                    return;
+                }
+            }
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void RecursosGrid_Drop(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent("DRAG_DROP_DATA")) return;
+            var data = e.Data.GetData("DRAG_DROP_DATA") as DragDropData;
+            if (data == null) return;
+
+            var vm = DataContext as MainViewModel;
+            if (vm?.SelectedBudgetItem == null)
+            {
+                MessageBox.Show("Seleccione un ítem primero.",
+                    "Sin ítem", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var item = vm.SelectedBudgetItem;
+
+            switch (data.Type)
+            {
+                // Recursos del servidor (ResourceViewModel)
+                case DragDropType.Resource:
+                    {
+                        var recursos = data.MultipleData.OfType<ResourceViewModel>();
+                        foreach (var r in recursos)
+                        {
+                            if (item.Resources.Any(x =>
+                                x.ResourceName == r.Nombre &&
+                                x.ResourceType == r.Tipo &&
+                                x.Unit == r.Unidad)) continue;
+
+                            var resourceVm = new ProjectResourceViewModel(
+                                () => item.RecalculateUnitPrice())
+                            {
+                                ResourceType = r.Tipo,
+                                ResourceName = r.Nombre,
+                                Unit = r.Unidad,
+                                Performance = r.Rendimiento > 0 ? r.Rendimiento : 1,
+                                UnitPrice = r.ResolvedPrice
+                            };
+                            resourceVm.InitializeWithGlobalPrice();
+                            item.Resources.Add(resourceVm);
+                        }
+                        break;
+                    }
+
+                // Recursos del usuario (UserRecursoViewModel)
+                case DragDropType.UserResource:
+                    {
+                        var recursos = data.MultipleData.OfType<UserRecursoViewModel>();
+                        foreach (var r in recursos)
+                        {
+                            if (item.Resources.Any(x =>
+                                x.ResourceName == r.Nombre &&
+                                x.ResourceType == r.Tipo &&
+                                x.Unit == r.Unidad)) continue;
+
+                            var resourceVm = new ProjectResourceViewModel(
+                                () => item.RecalculateUnitPrice())
+                            {
+                                ResourceType = r.Tipo,
+                                ResourceName = r.Nombre,
+                                Unit = r.Unidad,
+                                Performance = r.Rendimiento > 0 ? r.Rendimiento : 1,
+                                UnitPrice = r.Precio
+                            };
+                            resourceVm.InitializeWithGlobalPrice();
+                            item.Resources.Add(resourceVm);
+                        }
+                        break;
+                    }
+            }
+
+            item.RecalculateUnitPrice();
+            AplicarAgrupacionRecursos();
+            e.Handled = true;
+        }
+
+
+        // ── Extraer la lógica existente del servidor a un método separado ──────────
+        private void IniciarDragServidor(object sender, MainViewModel vm)
+        {
+            // Obtener el nodo del TreeView del servidor que se está arrastrando
+            // Esta es la lógica que ya tenías en tu TreeView_PreviewMouseMove original
+            // para el catálogo del servidor — múltiples ítems seleccionados, módulos, etc.
+
+            // Categorías seleccionadas
+            var selectedCategories = vm.CatalogGroups
+                .Where(c => c.IsSelected).ToList();
+            if (selectedCategories.Count > 0)
+            {
+                DragDropService.StartDrag(sender as DependencyObject,
+                    DragDropType.Category,
+                    selectedCategories.First(),
+                    selectedCategories.Cast<object>().ToList());
+                return;
+            }
+
+            // Módulos seleccionados
+            var selectedModules = vm.CatalogGroups
+                .SelectMany(c => c.Items)
+                .Where(m => m.IsSelected).ToList();
+            if (selectedModules.Count > 0)
+            {
+                DragDropService.StartDrag(sender as DependencyObject,
+                    DragDropType.Module,
+                    selectedModules.First(),
+                    selectedModules.Cast<object>().ToList());
+                return;
+            }
+
+            // Items seleccionados
+            var selectedItems = vm.CatalogGroups
+                .SelectMany(c => c.Items)
+                .SelectMany(m => m.Items)
+                .Where(i => i.IsSelected).ToList();
+            if (selectedItems.Count > 0)
+            {
+                DragDropService.StartDrag(sender as DependencyObject,
+                    DragDropType.Item,
+                    selectedItems.First(),
+                    selectedItems.Cast<object>().ToList());
+                return;
+            }
+
+            // Recursos seleccionados
+            var selectedResources = vm.CatalogGroups
+                .SelectMany(c => c.Items)
+                .SelectMany(m => m.Items)
+                .SelectMany(i => i.Recursos)
+                .Where(r => r.IsSelected).ToList();
+            if (selectedResources.Count > 0)
+            {
+                DragDropService.StartDrag(sender as DependencyObject,
+                    DragDropType.Resource,
+                    selectedResources.First(),
+                    selectedResources.Cast<object>().ToList());
+                return;
+            }
+
+            TryStartDragFromNode(sender, _dragSourceNode);
+        }
+
+        private object? FindDragSourceNode(DependencyObject? source)
+        {
+            while (source != null)
+            {
+                if (source is FrameworkElement element)
+                {
+                    switch (element.DataContext)
+                    {
+                        case CatalogGroupViewModel:
+                        case ModuloViewModel:
+                        case CatalogItemViewModel:
+                        case ResourceViewModel:
+                        case UserCategoriaViewModel:
+                        case UserModuloViewModel:
+                        case UserItemViewModel:
+                            return element.DataContext;
+                    }
+                }
+
+                source = VisualTreeHelper.GetParent(source);
+            }
+
+            return null;
+        }
+
+        private bool TryStartDragFromNode(object sender, object? node)
+        {
+            if (node == null)
+                return false;
+
+            switch (node)
+            {
+                case CatalogGroupViewModel category:
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.Category,
+                        category,
+                        new List<object> { category });
+                    return true;
+
+                case ModuloViewModel module:
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.Module,
+                        module,
+                        new List<object> { module });
+                    return true;
+
+                case CatalogItemViewModel item:
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.Item,
+                        item,
+                        new List<object> { item });
+                    return true;
+
+                case ResourceViewModel resource:
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.Resource,
+                        resource,
+                        new List<object> { resource });
+                    return true;
+
+                case UserCategoriaViewModel userCategory:
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.UserCategory,
+                        userCategory);
+                    return true;
+
+                case UserModuloViewModel userModule:
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.UserModule,
+                        userModule,
+                        new List<object> { userModule });
+                    return true;
+
+                case UserItemViewModel userItem:
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.UserItem,
+                        userItem,
+                        new List<object> { userItem });
+                    return true;
+            }
+
+            return false;
+        }
+
+
 
         // Eventos de arrastre específicos
         // ========== EVENTOS DE ARRASTRE PARA CADA NIVEL ==========
@@ -365,6 +715,12 @@ namespace PresupuestoPro
             e.Handled = false; // Dejar que el checkbox funcione normalmente
         }
 
+        private void CatalogSelectionCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+                vm.RefreshCatalogSelectionState();
+        }
+
         private void ItemCheckbox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             e.Handled = false;
@@ -373,6 +729,48 @@ namespace PresupuestoPro
         private void ResourceCheckbox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             e.Handled = false;
+        }
+
+        private void UserModuleCheckbox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = false;
+        }
+
+        private void UserItemCheckbox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = false;
+        }
+
+        private void UserCatalogSelectionCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+                vm.RefreshUserCatalogSelectionState();
+        }
+
+        private void UserResourceCheckbox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = false;
+        }
+
+        private List<UserModuloViewModel> GetSelectedUserModules()
+        {
+            var vm = DataContext as MainViewModel;
+            if (vm == null) return new();
+            return vm.UserCatalogGroups
+                .SelectMany(c => c.Modulos)
+                .Where(m => m.IsSelected)
+                .ToList();
+        }
+
+        private List<UserItemViewModel> GetSelectedUserItems()
+        {
+            var vm = DataContext as MainViewModel;
+            if (vm == null) return new();
+            return vm.UserCatalogGroups
+                .SelectMany(c => c.Modulos)
+                .SelectMany(m => m.Items)
+                .Where(i => i.IsSelected)
+                .ToList();
         }
 
         // Drop en el área principal del proyecto
@@ -425,12 +823,95 @@ namespace PresupuestoPro
             scroll.ScrollChanged += (_, _) => UpdateButtons();
             UpdateButtons();
         }
-        
 
-        
+        private async void MenuGuardarItems_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+                await vm.SaveItemsToUserCatalogCommand.ExecuteAsync(null);
+        }
+
+        private async void MenuGuardarModulo_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+                await vm.SaveModuleToUserCatalogCommand.ExecuteAsync(null);
+        }
+
+        private void MenuDuplicarItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainViewModel vm) return;
+            if (vm.SelectedBudgetItem == null || vm.SelectedModule == null) return;
+
+            var original = vm.SelectedBudgetItem;
+            var copia = new ProjectItemViewModel(vm._projectPricingService)
+            {
+                Code = original.Code,
+                Description = DragDropService.GenerateUniqueItemName(
+                    vm.SelectedModule, original.Description),
+                Unit = original.Unit,
+                Quantity = original.Quantity,
+                UnitPrice = original.UnitPrice
+            };
+
+            // Copiar recursos
+            GlobalResourceService.IsSuspended = true;
+            GlobalItemService.IsSuspended = true;
+            try
+            {
+                foreach (var r in original.Resources)
+                {
+                    copia.Resources.Add(new ProjectResourceViewModel(
+                        () => copia.RecalculateUnitPrice())
+                    {
+                        ResourceType = r.ResourceType,
+                        ResourceName = r.ResourceName,
+                        Unit = r.Unit,
+                        Performance = r.Performance,
+                        UnitPrice = r.UnitPrice
+                    });
+                }
+            }
+            finally
+            {
+                GlobalResourceService.IsSuspended = false;
+                GlobalItemService.IsSuspended = false;
+            }
+            copia.UnitPrice = original.UnitPrice;
+            copia.Total = original.Total;
+            //RecalculateUnitPrice()
+
+            // Insertar justo después del original
+            var idx = vm.SelectedModule.Items.IndexOf(original);
+            vm.SelectedModule.Items.Insert(idx + 1, copia);
+        }
+
+        private void MenuEliminarItems_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainViewModel vm) return;
+            if (vm.SelectedModule == null) return;
+
+            var seleccionados = vm.SelectedModule.Items
+                .Where(i => i.IsSelected).ToList();
+
+            if (seleccionados.Count == 0 && vm.SelectedBudgetItem != null)
+                seleccionados = new List<ProjectItemViewModel> { vm.SelectedBudgetItem };
+
+            if (seleccionados.Count == 0) return;
+
+            var confirm = MessageBox.Show(
+                $"¿Eliminar {seleccionados.Count} item(s)?",
+                "Confirmar", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            foreach (var item in seleccionados)
+                vm.SelectedModule.Items.Remove(item);
+
+            vm.UpdateProjectTotal();
+        }
 
 
-        
+
+
         /*private void DataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _dragStartPoint = e.GetPosition(sender as IInputElement);
@@ -452,6 +933,6 @@ namespace PresupuestoPro
             }
         }*/
 
- 
+
     }
 }

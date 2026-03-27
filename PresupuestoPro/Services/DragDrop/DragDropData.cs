@@ -12,7 +12,14 @@ namespace PresupuestoPro.Services.DragDrop
         Module,
         Item,
         Resource,
-        ProjectItems
+        ProjectItems,
+
+        // Catálogo usuario (nuevos)
+        UserCategory,
+        UserModule,
+        UserItem,
+        UserResource,   // recurso del catálogo usuario
+        ServerResource, // recurso individual del servidor (ResourceViewModel)
     }
 
     public class DragDropData

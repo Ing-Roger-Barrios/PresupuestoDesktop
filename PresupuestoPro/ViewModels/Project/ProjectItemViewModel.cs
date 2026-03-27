@@ -180,6 +180,7 @@ namespace PresupuestoPro.ViewModels.Project
             if (_pricingService != null)
             {
                 UnitPrice = _pricingService.CalculateItemUnitPrice(this);
+                CalculateTotal();
                 OnPropertyChanged(nameof(UnitPrice));
                 OnPropertyChanged(nameof(Total));
             }

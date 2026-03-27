@@ -16,6 +16,16 @@
         <converters:DuplicateToColorConverter x:Key="DuplicateToColorConverter"/>
         <converters:DuplicateToBackgroundConverter x:Key="DuplicateToBackgroundConverter"/>
 
+        <converters:ResourceTypeToLabelConverter x:Key="ResourceTypeToLabelConverter"/>
+        <converters:GroupCostSumConverter        x:Key="GroupCostSumConverter"/>
+
+        <CollectionViewSource x:Key="RecursosAgrupados"
+      Source="{Binding SelectedBudgetItem.Resources}">
+            <CollectionViewSource.GroupDescriptions>
+                <PropertyGroupDescription PropertyName="ResourceType"/>
+            </CollectionViewSource.GroupDescriptions>
+        </CollectionViewSource>
+
         <!-- Colores personalizados -->
         <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#0C3C61"/>
         <SolidColorBrush x:Key="MenuForegroundBrush" Color="White"/>

@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PresupuestoPro.Models.Project; // 👈 Añadir este using
-using System.Collections.Concurrent;
+using PresupuestoPro.Models.Project;
 
 namespace PresupuestoPro.Services.Project
 {
@@ -15,7 +14,11 @@ namespace PresupuestoPro.Services.Project
 
         public static event Action<string>? ItemConfigurationChanged;
 
-        // 👇 NUEVA CLAVE: "Codigo|Descripcion|Unidad"
+        /// <summary>
+        /// Suspende el disparo de ItemConfigurationChanged durante cargas masivas.
+        /// </summary>
+        public static bool IsSuspended { get; set; } = false;
+
         public static string GetItemKey(string code, string description, string unit)
         {
             return $"{code}|{description}|{unit}";
@@ -25,7 +28,9 @@ namespace PresupuestoPro.Services.Project
         {
             var key = GetItemKey(code, description, unit);
             _globalItems[key] = config;
-            ItemConfigurationChanged?.Invoke(key);
+
+            if (!IsSuspended)
+                ItemConfigurationChanged?.Invoke(key);
         }
 
         public static ItemConfiguration? GetItemConfiguration(string code, string description, string unit)

@@ -1,0 +1,329 @@
+﻿<Window x:Class="PresupuestoPro.Views.UserItemEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        Title="Editor de Ítem"
+        Width="980" Height="640"
+        MinWidth="800" MinHeight="500"
+        WindowStartupLocation="CenterOwner"
+        Background="#F5F6FA">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- Datos del ítem -->
+            <RowDefinition Height="*"/>
+            <!-- Panel principal -->
+            <RowDefinition Height="Auto"/>
+            <!-- Footer -->
+        </Grid.RowDefinitions>
+
+        <!-- ── Header ──────────────────────────────────────────────── -->
+        <Border Grid.Row="0" Background="#1565C0" Padding="20,14">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="📝" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel>
+                    <TextBlock Text="Editor de Ítem"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="White"/>
+                    <TextBlock Text="Arrastre recursos desde el catálogo o cree recursos locales"
+                               FontSize="11" Foreground="#90CAF9"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ── Datos del ítem ──────────────────────────────────────── -->
+        <Border Grid.Row="1" Background="White"
+                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="120"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                    <TextBlock Text="Descripción" FontSize="11"
+                               Foreground="#757575" Margin="0,0,0,2"/>
+                    <TextBox x:Name="TxtDescripcion"
+                             Padding="8,5" FontSize="13"
+                             BorderBrush="#BDBDBD"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                    <TextBlock Text="Unidad" FontSize="11"
+                               Foreground="#757575" Margin="0,0,0,2"/>
+                    <TextBox x:Name="TxtUnidad"
+                             Padding="8,5" FontSize="13"
+                             BorderBrush="#BDBDBD"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Rendimiento" FontSize="11"
+                               Foreground="#757575" Margin="0,0,0,2"/>
+                    <TextBox x:Name="TxtRendimiento"
+                             Text="1"
+                             Padding="8,5" FontSize="13"
+                             BorderBrush="#BDBDBD"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ── Panel principal: Catálogo + Recursos del ítem ────────── -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340" MinWidth="260"/>
+                <ColumnDefinition Width="5"/>
+                <!-- Splitter -->
+                <ColumnDefinition Width="*" MinWidth="300"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ╔══════════════════════════════════════════════╗ -->
+            <!-- ║  PANEL IZQUIERDO: Recursos del servidor      ║ -->
+            <!-- ╚══════════════════════════════════════════════╝ -->
+            <Grid Grid.Column="0" Background="White">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Título -->
+                <Border Grid.Row="0" Background="#E3F2FD" Padding="12,8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🌐 Recursos del Servidor"
+                                   FontWeight="SemiBold" FontSize="12"
+                                   Foreground="#1565C0"/>
+                        <TextBlock Text=" — Arrastre al ítem"
+                                   FontSize="11" Foreground="#90CAF9"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Buscador -->
+                <TextBox Grid.Row="1"
+                         x:Name="TxtBuscarRecurso"
+                         Margin="8,6,8,4"
+                         Padding="6,4" FontSize="12"
+                         TextChanged="TxtBuscarRecurso_TextChanged"
+                         Tag="🔍 Buscar recurso..."/>
+
+                <!-- Lista agrupada de recursos -->
+                <ListView Grid.Row="2"
+                          x:Name="ListaRecursosServidor"
+                          Margin="4,0,4,4"
+                          SelectionMode="Extended"
+                          AllowDrop="False"
+                          PreviewMouseLeftButtonDown="ListaRecursos_PreviewMouseDown"
+                          PreviewMouseMove="ListaRecursos_PreviewMouseMove"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          BorderThickness="0">
+
+                    <ListView.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <Border Background="#F5F5F5"
+                                            BorderBrush="#E0E0E0"
+                                            BorderThickness="0,0,0,1"
+                                            Padding="8,4">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontWeight="Bold" FontSize="11"
+                                                   Foreground="#424242"/>
+                                    </Border>
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ListView.GroupStyle>
+
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="2,1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding Nombre}"
+                                           FontSize="12"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding Nombre}"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding PrecioUnitarioOriginal, StringFormat=C0}"
+                                           FontSize="11"
+                                           Foreground="#388E3C"
+                                           HorizontalAlignment="Right"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="8,3"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#BBDEFB"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1"
+                          Width="5"
+                          HorizontalAlignment="Stretch"
+                          Background="#E0E0E0"/>
+
+            <!-- ╔══════════════════════════════════════════════╗ -->
+            <!-- ║  PANEL DERECHO: Recursos del ítem            ║ -->
+            <!-- ╚══════════════════════════════════════════════╝ -->
+            <Grid Grid.Column="2" Background="White">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Título + zona de drop -->
+                <Border Grid.Row="0" Background="#E8F5E9" Padding="12,8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📋 Recursos del Ítem"
+                                   FontWeight="SemiBold" FontSize="12"
+                                   Foreground="#2E7D32"/>
+                        <TextBlock Text=" — Suelte aquí los recursos"
+                                   FontSize="11" Foreground="#81C784"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- DataGrid de recursos del ítem -->
+                <DataGrid Grid.Row="1"
+                          x:Name="GridRecursosItem"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          SelectionMode="Extended"
+                          SelectionUnit="FullRow"
+                          RowHeight="30"
+                          FontSize="12"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#F0F0F0"
+                          BorderThickness="0"
+                          Background="White"
+                          AllowDrop="True"
+                          Drop="GridRecursosItem_Drop"
+                          DragOver="GridRecursosItem_DragOver">
+
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Nombre"
+                                            Binding="{Binding Nombre}"
+                                            Width="*" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tipo"
+                                            Binding="{Binding TipoLabel}"
+                                            Width="90" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Unidad"
+                                            Binding="{Binding Unidad}"
+                                            Width="55" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Rend."
+                                            Binding="{Binding Rendimiento, StringFormat=N4, UpdateSourceTrigger=PropertyChanged}"
+                                            Width="70">
+                            <DataGridTextColumn.EditingElementStyle>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.EditingElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="Precio"
+                                            Binding="{Binding Precio, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}"
+                                            Width="70">
+                            <DataGridTextColumn.EditingElementStyle>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.EditingElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTemplateColumn Width="30">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="✕"
+                                            FontSize="10"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Foreground="#EF5350"
+                                            Click="BtnQuitarRecurso_Click"
+                                            Tag="{Binding}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+
+                    <!-- Indicador visual cuando se arrastra encima -->
+                    <DataGrid.Style>
+                        <Style TargetType="DataGrid">
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="BorderBrush" Value="#4CAF50"/>
+                                    <Setter Property="BorderThickness" Value="2"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.Style>
+                </DataGrid>
+
+                <!-- Botones inferiores del panel derecho -->
+                <StackPanel Grid.Row="2"
+                            Orientation="Horizontal"
+                            Margin="8,6,8,8">
+                    <Button Content="＋ Recurso local"
+                            Click="BtnNuevoRecursoLocal_Click"
+                            Background="#FF8F00"
+                            Foreground="White"
+                            FontSize="11"
+                            Padding="10,5"
+                            Margin="0,0,6,0"
+                            ToolTip="Crear un recurso propio que no está en el catálogo del servidor"/>
+                    <Button Content="🗑 Quitar seleccionados"
+                            Click="BtnQuitarSeleccionados_Click"
+                            Background="#EF5350"
+                            Foreground="White"
+                            FontSize="11"
+                            Padding="10,5"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <!-- ── Footer ──────────────────────────────────────────────── -->
+        <Border Grid.Row="3"
+                Background="White"
+                BorderBrush="#E0E0E0"
+                BorderThickness="0,1,0,0"
+                Padding="16,10">
+            <Grid>
+                <TextBlock x:Name="TxtStatus"
+                           Text="Arrastre recursos desde el catálogo del servidor al panel derecho"
+                           FontSize="11" Foreground="#757575"
+                           VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Content="✓ Guardar Ítem"
+                            Click="BtnGuardar_Click"
+                            Background="#1565C0"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            Padding="20,8"
+                            Margin="0,0,8,0"/>
+                    <Button Content="Cancelar"
+                            Click="BtnCancelar_Click"
+                            Background="White"
+                            BorderBrush="#BDBDBD"
+                            BorderThickness="1"
+                            Padding="20,8"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

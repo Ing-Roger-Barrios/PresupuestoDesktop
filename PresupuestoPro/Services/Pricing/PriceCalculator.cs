@@ -97,8 +97,10 @@ namespace PresupuestoPro.Services.Pricing
             // F = Cargas Sociales
             var F = E * (config.CargasSocialesPorcentaje / 100);
 
+            var O = (E + F) * (config.IVA_Porcentaje / 100);
+
             // G = Total Mano de Obra
-            var G = E + F;
+            var G = E + F + O;
 
             // H = Herramientas menores
             var H = G * (config.HerramientasMenoresPorcentaje / 100);
@@ -122,7 +124,7 @@ namespace PresupuestoPro.Services.Pricing
             var N = J + L + M;
 
             // O = IVA
-            var O = (E + F) * (config.IVA_Porcentaje / 100);
+            
 
             // P = IT
             var P = N * (config.IT_Porcentaje / 100);

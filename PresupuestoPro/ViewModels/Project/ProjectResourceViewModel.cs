@@ -43,7 +43,7 @@ namespace PresupuestoPro.ViewModels.Project
         private decimal _partialCost;
 
         public bool IsMaterial => ResourceType.Equals("Material", StringComparison.OrdinalIgnoreCase);
-        public bool IsManoObra => ResourceType.Equals("Mano de Obra", StringComparison.OrdinalIgnoreCase);
+        public bool IsManoObra => ResourceType.Equals("ManoObra", StringComparison.OrdinalIgnoreCase);
         public bool IsEquipo => !IsMaterial && !IsManoObra;
 
         public void InitializeWithGlobalPrice()
@@ -74,6 +74,17 @@ namespace PresupuestoPro.ViewModels.Project
                     _isSyncing = false;
                 }
             }
+        }
+        public int ResourceTypeSortOrder => ResourceType switch
+        {
+            "Material" => 1,
+            "ManoObra" => 2,
+            "Equipo" => 3,
+            _ => 4
+        };
+        public void SetCallback(Action callback)
+        {
+            _onPropertyChangedCallback = callback;
         }
 
         partial void OnPerformanceChanged(decimal value)
