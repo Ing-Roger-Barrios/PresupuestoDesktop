@@ -12,9 +12,20 @@ namespace PresupuestoPro.Services.Pricing
     {
         private readonly PricingNormService _normService;
 
+        public string CurrentNormName { get; private set; }
+
         public ProjectPricingService(PricingNormService normService)
         {
             _normService = normService;
+            CurrentNormName = _normService.GetDefaultNormName();
+        }
+
+        public void SetCurrentNorm(string? normName)
+        {
+            var names = _normService.GetNormNames();
+            CurrentNormName = !string.IsNullOrWhiteSpace(normName) && names.Contains(normName)
+                ? normName
+                : _normService.GetDefaultNormName();
         }
 
         public decimal CalculateItemUnitPrice(ProjectItemViewModel item)
@@ -22,14 +33,7 @@ namespace PresupuestoPro.Services.Pricing
 
             try
             {
-                // Obtener la norma predeterminada
-                
-                var normNames = _normService.GetNormNames();
-                
-                var defaultNormName = normNames.FirstOrDefault(n => n == "Norma SABS Bolivia") ??
-                                    normNames.FirstOrDefault() ?? "Norma SABS Bolivia";
-
-                var rules = _normService.GetNormRules(defaultNormName);
+                var rules = _normService.GetNormRules(CurrentNormName);
                 var config = CreatePricingConfiguration(rules);
 
                 // Calcular totales por tipo

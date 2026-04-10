@@ -17,6 +17,7 @@ namespace PresupuestoPro.ViewModels.Project
         private readonly ProjectPricingService? _pricingService;
         private bool _isSyncing = false;
         private string _itemKey = string.Empty;
+        private int _bulkUpdateDepth = 0;
 
         public ProjectItemViewModel(ProjectPricingService? pricingService = null)
         {
@@ -69,7 +70,32 @@ namespace PresupuestoPro.ViewModels.Project
             }
             else
             {
-                SaveCurrentConfiguration();
+                if (_bulkUpdateDepth > 0)
+                    return;
+
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    SaveCurrentConfiguration();
+                }));
+            }
+        }
+
+        public void BeginBulkUpdate()
+        {
+            _bulkUpdateDepth++;
+            _isSyncing = true;
+        }
+
+        public void EndBulkUpdate(bool recalculatePrice = true)
+        {
+            if (_bulkUpdateDepth > 0)
+                _bulkUpdateDepth--;
+
+            if (_bulkUpdateDepth == 0)
+            {
+                _isSyncing = false;
+                if (recalculatePrice)
+                    RecalculateUnitPrice();
             }
         }
 
@@ -134,18 +160,29 @@ namespace PresupuestoPro.ViewModels.Project
 
         private void OnResourcesCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            if (!_isSyncing)
+            if (!_isSyncing && _bulkUpdateDepth == 0)
             {
-                SaveCurrentConfiguration();
+
+                //SaveCurrentConfiguration();
+                // Usar Dispatcher para evitar modificar la ObservableCollection durante el evento CollectionChanged
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    SaveCurrentConfiguration();
+                }));
             }
         }
 
         partial void OnQuantityChanged(decimal value)
         {
             CalculateTotal();
-            if (!_isSyncing)
+            if (!_isSyncing && _bulkUpdateDepth == 0)
             {
-                SaveCurrentConfiguration();
+                //SaveCurrentConfiguration();
+                // Usar Dispatcher para evitar modificar la ObservableCollection durante el evento CollectionChanged
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    SaveCurrentConfiguration();
+                }));
             }
         }
 
@@ -171,12 +208,21 @@ namespace PresupuestoPro.ViewModels.Project
 
             if (!string.IsNullOrEmpty(oldKey) && oldKey != _itemKey)
             {
-                SaveCurrentConfiguration();
+                if (_bulkUpdateDepth > 0)
+                    return;
+
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    SaveCurrentConfiguration();
+                }));
             }
         }
 
         public void RecalculateUnitPrice()
         {
+            if (_bulkUpdateDepth > 0)
+                return;
+
             if (_pricingService != null)
             {
                 UnitPrice = _pricingService.CalculateItemUnitPrice(this);

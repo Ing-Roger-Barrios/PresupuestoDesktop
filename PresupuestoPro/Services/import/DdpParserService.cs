@@ -53,6 +53,13 @@ namespace PresupuestoPro.Services.import
         private const int BLOQUE_TOTAL = BLOQUE_MATERIALES + BLOQUE_MANO_OBRA + BLOQUE_EQUIPO;
 
         private readonly ProjectPricingService? _pricingService;
+        private static readonly Encoding _windows1252;
+
+        static DdpParserService()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            _windows1252 = Encoding.GetEncoding(1252);
+        }
 
         public DdpParserService(ProjectPricingService? pricingService = null)
         {
@@ -318,6 +325,7 @@ namespace PresupuestoPro.Services.import
                 foreach (var (id, nombre) in modulos)
                 {
                     var vm = new ProjectModuleViewModel { Name = nombre };
+                    vm.BeginBulkUpdate();
                     result.Add(vm);
                     modulosMap[id] = vm;
                 }
@@ -334,19 +342,11 @@ namespace PresupuestoPro.Services.import
                         Unit = partida.Unidad,
                         Quantity = partida.Rendimiento
                     };
+                    itemVm.BeginBulkUpdate();
 
                     var insumosItem = GetInsumosItem(dat, partida.IdRelacionado, insumos);
 
-                    // Ordenar recursos por tipo antes de agregarlos
-                    var recursosOrdenados = insumosItem
-                        .OrderBy(r => r.Tipo switch {
-                            "Material" => 1,
-                            "ManoObra" => 2,
-                            "Equipo" => 3,
-                            _ => 4
-                        });
-
-                    foreach (var insumoItem in recursosOrdenados)
+                    foreach (var insumoItem in insumosItem)
                     {
                         if (!insumos.TryGetValue(insumoItem.IdInsumo, out var ins)) continue;
 
@@ -365,9 +365,12 @@ namespace PresupuestoPro.Services.import
                     }
 
                     itemVm.InitializeWithGlobalConfiguration();
-                    itemVm.RecalculateUnitPrice();
+                    itemVm.EndBulkUpdate();
                     moduleVm.Items.Add(itemVm);
                 }
+
+                foreach (var moduleVm in result)
+                    moduleVm.EndBulkUpdate();
 
             } // end try
             finally { GlobalResourceService.IsSuspended = false; GlobalItemService.IsSuspended = false; }
@@ -393,11 +396,9 @@ namespace PresupuestoPro.Services.import
         {
             try
             {
-                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-                var enc = Encoding.GetEncoding(1252);
                 int len = Math.Min(length, data.Length - offset);
                 if (len <= 0) return string.Empty;
-                var s = enc.GetString(data, offset, len);
+                var s = _windows1252.GetString(data, offset, len);
                 int end = s.IndexOf('\0');
                 if (end >= 0) s = s[..end];
                 return s.Trim();

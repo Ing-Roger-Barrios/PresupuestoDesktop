@@ -11,15 +11,17 @@ using System.Windows;
 using Microsoft.Xaml.Behaviors;
 using CommunityToolkit.Mvvm.Input;
 using System.Windows.Documents;
+using System.Windows.Threading;
 
 namespace PresupuestoPro.Behaviors
 {
     public class DataGridDragDropBehavior : Behavior<DataGrid>
     {
-        private InsertionLineAdorner _insertionAdorner;
-        private AdornerLayer _adornerLayer;
+        private const double DragOpacity = 0.45;
+        private InsertionLineAdorner? _insertionAdorner;
+        private AdornerLayer? _adornerLayer;
         private System.Windows.Point _dragStartPoint;
-        private object _draggedItem;
+        private object? _draggedItem;
 
         protected override void OnAttached()
         {
@@ -56,12 +58,8 @@ namespace PresupuestoPro.Behaviors
             if (!AssociatedObject.IsAncestorOf(source) &&
                 !ReferenceEquals(source, AssociatedObject)) return;
 
-            var element = AssociatedObject.InputHitTest(_dragStartPoint) as DependencyObject;
-
-            while (element != null && !(element is DataGridRow))
-                element = VisualTreeHelper.GetParent(element);
-
-            _draggedItem = element is DataGridRow row ? row.DataContext : null;
+            var row = FindParent<DataGridRow>(source);
+            _draggedItem = row?.DataContext;
         }
 
         private void OnMouseMove(object sender, MouseEventArgs e)
@@ -83,14 +81,24 @@ namespace PresupuestoPro.Behaviors
                 Math.Pow(currentPoint.X - _dragStartPoint.X, 2) +
                 Math.Pow(currentPoint.Y - _dragStartPoint.Y, 2));
 
-            if (distance > 5)
+            if (distance > SystemParameters.MinimumVerticalDragDistance)
             {
-                var selectedItems = AssociatedObject.SelectedItems.Cast<object>().ToList();
-                if (!selectedItems.Contains(_draggedItem))
-                    selectedItems = new List<object> { _draggedItem };
+                var selectedItems = GetDraggedItems();
+                if (selectedItems.Count == 0)
+                    return;
 
                 var data = new DataObject("PROJECT_ITEMS_REORDER", selectedItems);
-                DragDrop.DoDragDrop(AssociatedObject, data, DragDropEffects.Move);
+                ApplyDragVisualState(selectedItems, DragOpacity);
+                try
+                {
+                    DragDrop.DoDragDrop(AssociatedObject, data, DragDropEffects.Move);
+                }
+                finally
+                {
+                    ApplyDragVisualState(selectedItems, 1.0);
+                    HideInsertionLine();
+                }
+
                 _draggedItem = null;
             }
         }
@@ -99,8 +107,17 @@ namespace PresupuestoPro.Behaviors
         {
             if (e.Data.GetDataPresent("PROJECT_ITEMS_REORDER"))
             {
-                ShowInsertionLine(e.GetPosition(AssociatedObject));
-                e.Effects = DragDropEffects.Move;
+                var insertInfo = GetInsertInfo(e.GetPosition(AssociatedObject));
+                if (insertInfo.HasValue)
+                {
+                    ShowInsertionLine(insertInfo.Value.lineY);
+                    e.Effects = DragDropEffects.Move;
+                }
+                else
+                {
+                    HideInsertionLine();
+                    e.Effects = DragDropEffects.None;
+                }
                 e.Handled = true;
             }
         }
@@ -117,11 +134,8 @@ namespace PresupuestoPro.Behaviors
                 var itemsToMove = e.Data.GetData("PROJECT_ITEMS_REORDER") as List<object>;
                 if (itemsToMove?.Count > 0 && AssociatedObject.DataContext is ProjectModuleViewModel moduleVm)
                 {
-                    // Calcular índice de inserción
-                    var dropPoint = e.GetPosition(AssociatedObject);
-                    var rowHeight = AssociatedObject.RowHeight > 0 ? AssociatedObject.RowHeight : 32;
-                    var insertIndex = (int)(dropPoint.Y / rowHeight);
-                    insertIndex = Math.Max(0, Math.Min(insertIndex, moduleVm.Items.Count));
+                    var insertInfo = GetInsertInfo(e.GetPosition(AssociatedObject));
+                    var insertIndex = insertInfo?.index ?? moduleVm.Items.Count;
 
                     // Convertir a ProjectItemViewModel
                     var typedItems = itemsToMove.Cast<ProjectItemViewModel>().ToList();
@@ -135,13 +149,14 @@ namespace PresupuestoPro.Behaviors
 
                     // Ejecutar comando
                     moduleVm.ReorderItemsCommand.Execute(parameters);
+                    RestoreSelection(typedItems);
                 }
                 HideInsertionLine();
                 e.Handled = true;
             }
         }
 
-        private void ShowInsertionLine(Point position)
+        private void ShowInsertionLine(double lineY)
         {
             try
             {
@@ -157,11 +172,6 @@ namespace PresupuestoPro.Behaviors
                     _adornerLayer.Add(_insertionAdorner);
                 }
 
-                // Calcular posición Y
-                var rowHeight = AssociatedObject.RowHeight > 0 ? AssociatedObject.RowHeight : 32;
-                var insertIndex = (int)(position.Y / rowHeight);
-                var lineY = insertIndex * rowHeight;
-
                 // Asegurar que esté dentro de los límites
                 var maxLineY = AssociatedObject.ActualHeight;
                 lineY = Math.Max(0, Math.Min(lineY, maxLineY));
@@ -172,6 +182,119 @@ namespace PresupuestoPro.Behaviors
             {
                 // Ignorar errores en el feedback visual
             }
+        }
+
+        private (int index, double lineY)? GetInsertInfo(Point position)
+        {
+            if (AssociatedObject.Items.Count == 0)
+                return (0, 0);
+
+            var source = AssociatedObject.InputHitTest(position) as DependencyObject;
+            var row = FindParent<DataGridRow>(source);
+
+            if (row?.DataContext is ProjectItemViewModel rowItem &&
+                AssociatedObject.ItemsSource is System.Collections.IEnumerable)
+            {
+                var rowIndex = AssociatedObject.Items.IndexOf(rowItem);
+                if (rowIndex >= 0)
+                {
+                    var rowTop = row.TranslatePoint(new Point(0, 0), AssociatedObject).Y;
+                    var midpoint = rowTop + (row.ActualHeight / 2);
+                    var insertBefore = position.Y < midpoint;
+                    var lineY = insertBefore ? rowTop : rowTop + row.ActualHeight;
+                    var index = insertBefore ? rowIndex : rowIndex + 1;
+                    return (index, lineY);
+                }
+            }
+
+            var firstRow = AssociatedObject.ItemContainerGenerator.ContainerFromIndex(0) as DataGridRow;
+            if (firstRow != null)
+            {
+                var firstRowTop = firstRow.TranslatePoint(new Point(0, 0), AssociatedObject).Y;
+                if (position.Y <= firstRowTop)
+                    return (0, firstRowTop);
+            }
+
+            var lastIndex = AssociatedObject.Items.Count - 1;
+            var lastRow = AssociatedObject.ItemContainerGenerator.ContainerFromIndex(lastIndex) as DataGridRow;
+            if (lastRow != null)
+            {
+                var lastRowTop = lastRow.TranslatePoint(new Point(0, 0), AssociatedObject).Y;
+                var lastLineY = lastRowTop + lastRow.ActualHeight;
+                return (lastIndex + 1, lastLineY);
+            }
+
+            return (AssociatedObject.Items.Count, AssociatedObject.ActualHeight);
+        }
+
+        private static T? FindParent<T>(DependencyObject? child) where T : DependencyObject
+        {
+            while (child != null)
+            {
+                if (child is T match)
+                    return match;
+
+                child = VisualTreeHelper.GetParent(child);
+            }
+
+            return null;
+        }
+
+        private void RestoreSelection(List<ProjectItemViewModel> movedItems)
+        {
+            if (movedItems.Count == 0)
+                return;
+
+            AssociatedObject.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                AssociatedObject.SelectedItems.Clear();
+
+                foreach (var item in movedItems)
+                {
+                    AssociatedObject.SelectedItems.Add(item);
+                }
+
+                var firstItem = movedItems[0];
+                AssociatedObject.SelectedItem = firstItem;
+                AssociatedObject.CurrentCell = new DataGridCellInfo(firstItem, AssociatedObject.Columns.FirstOrDefault());
+                AssociatedObject.ScrollIntoView(firstItem);
+                Keyboard.Focus(AssociatedObject);
+            }), DispatcherPriority.Background);
+        }
+
+        private void ApplyDragVisualState(IEnumerable<object> items, double opacity)
+        {
+            foreach (var item in items)
+            {
+                if (AssociatedObject.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row)
+                {
+                    row.Opacity = opacity;
+                }
+            }
+        }
+
+        private List<object> GetDraggedItems()
+        {
+            if (_draggedItem is not ProjectItemViewModel draggedProjectItem)
+                return new List<object>();
+
+            if (AssociatedObject.DataContext is ProjectModuleViewModel moduleVm &&
+                draggedProjectItem.IsSelected)
+            {
+                var checkedItems = moduleVm.Items
+                    .Where(item => item.IsSelected)
+                    .Cast<object>()
+                    .ToList();
+
+                if (checkedItems.Count > 0)
+                    return checkedItems;
+            }
+
+            var selectedRows = AssociatedObject.SelectedItems.Cast<object>().ToList();
+            if (selectedRows.Contains(_draggedItem))
+                return selectedRows;
+
+            return new List<object> { _draggedItem };
         }
 
         private void HideInsertionLine()

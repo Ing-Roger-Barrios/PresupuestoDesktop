@@ -19,6 +19,9 @@ namespace PresupuestoPro.ViewModels.Project
         [ObservableProperty]
         private decimal _total;
 
+        [ObservableProperty]
+        private string _pricingNormName = "Norma SABS Bolivia";
+
         partial void OnTotalChanged(decimal value)
         {
             // Actualizar automáticamente cuando cambien los módulos

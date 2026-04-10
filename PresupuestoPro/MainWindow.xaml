@@ -574,7 +574,11 @@
                                                                 <Border Style="{StaticResource CatalogResourceBadgeStyle}">
                                                                     <TextBlock Text="{Binding TipoBadgeLabel}" Style="{StaticResource CatalogResourceBadgeTextStyle}"/>
                                                                 </Border>
-                                                                <TextBlock Text="{Binding Nombre}"
+                                                                    <CheckBox IsChecked="{Binding IsSelected}"
+                                                                          PreviewMouseDown="ResourceCheckbox_PreviewMouseDown"
+                                                                          Checked="CatalogSelectionCheckBox_Changed"
+                                                                          Unchecked="CatalogSelectionCheckBox_Changed"/>
+                                                                    <TextBlock Text="{Binding Nombre}"
                                                                            Style="{StaticResource CatalogPrimaryTextStyle}"
                                                                            TextTrimming="CharacterEllipsis"
                                                                            TextWrapping="NoWrap"
@@ -585,6 +589,7 @@
                                                                 <TextBlock Text=" | " Style="{StaticResource CatalogMutedTextStyle}"/>
                                                                 <TextBlock Text="{Binding PrecioUnitarioOriginal, StringFormat=C}"
                                                                            Style="{StaticResource CatalogPriceTextStyle}"/>
+                                                                
                                                             </StackPanel>
                                                         </DataTemplate>
                                                     </HierarchicalDataTemplate.ItemTemplate>
@@ -1109,6 +1114,68 @@
                    FontSize="16"
                    Foreground="#888"
                    Visibility="{Binding ProjectModules.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+
+                    <Border Background="#4CF6F8FB"
+                            Panel.ZIndex="50"
+                            Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid>
+                            <Border HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    MinWidth="320"
+                                    MaxWidth="420"
+                                    Padding="26,22"
+                                    CornerRadius="18"
+                                    Background="#FAFFFFFF"
+                                    BorderBrush="#D7E3F4"
+                                    BorderThickness="1">
+                                <StackPanel>
+                                    <Border Width="56"
+                                            Height="56"
+                                            CornerRadius="28"
+                                            Background="#EAF2FF"
+                                            HorizontalAlignment="Center"
+                                            Margin="0,0,0,14">
+                                        <Viewbox Margin="14">
+                                            <Grid Width="24" Height="24">
+                                                <Ellipse Stroke="#90CAF9" StrokeThickness="3" Opacity="0.45"/>
+                                                <Path Data="M12,1 A11,11 0 0 1 23,12"
+                                                      Stroke="#1565C0"
+                                                      StrokeThickness="3"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round">
+                                                    <Path.RenderTransform>
+                                                        <RotateTransform CenterX="12" CenterY="12"/>
+                                                    </Path.RenderTransform>
+                                                    <Path.Triggers>
+                                                        <EventTrigger RoutedEvent="Loaded">
+                                                            <BeginStoryboard>
+                                                                <Storyboard RepeatBehavior="Forever">
+                                                                    <DoubleAnimation Storyboard.TargetProperty="(Path.RenderTransform).(RotateTransform.Angle)"
+                                                                                     From="0" To="360" Duration="0:0:1.15"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </EventTrigger>
+                                                    </Path.Triggers>
+                                                </Path>
+                                            </Grid>
+                                        </Viewbox>
+                                    </Border>
+                                    <TextBlock Text="{Binding BusyMessage}"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"
+                                               Foreground="#16324F"
+                                               HorizontalAlignment="Center"
+                                               TextAlignment="Center"
+                                               Margin="0,0,0,6"/>
+                                    <TextBlock Text="La app sigue trabajando; en un momento termina."
+                                               Foreground="#5B6B7C"
+                                               HorizontalAlignment="Center"
+                                               TextAlignment="Center"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Grid>
 
@@ -1255,5 +1322,6 @@
 
             </GroupBox>
         </Grid>
+
     </Grid>
 </Window>

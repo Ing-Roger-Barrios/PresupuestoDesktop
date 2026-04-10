@@ -33,6 +33,9 @@ namespace PresupuestoPro.ViewModels
         [ObservableProperty]
         private ObservableCollection<ResourceViewModel> _recursos = new();
 
+        // Para acceso desde XAML y código
+        //public ObservableCollection<ResourceViewModel> Recursos => _recursos;
+
         // 👇 NUEVO: Para selección múltiple
         [ObservableProperty]
         private bool _isSelected;

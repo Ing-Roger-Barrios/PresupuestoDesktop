@@ -85,6 +85,8 @@ namespace PresupuestoPro
         }
 
 
+
+
         // Manejar el drop en las filas del DataGrid
         // Alternativa: Detectar el item bajo el cursor
         private void DataGridRow_Drop(object sender, DragEventArgs e)
@@ -250,6 +252,16 @@ namespace PresupuestoPro
                         DragDropType.UserResource,
                         selectedUserResources.First(),
                         selectedUserResources.Cast<object>().ToList());
+                    return;
+                }
+                // Verificar si el nodo bajo el cursor es un recurso directo del usuario
+                var userResourceUnderCursor = FindUserResourceUnderCursor(e.OriginalSource as DependencyObject);
+                if (userResourceUnderCursor != null)
+                {
+                    DragDropService.StartDrag(sender as DependencyObject,
+                        DragDropType.UserResource,
+                        userResourceUnderCursor,
+                        new List<object> { userResourceUnderCursor });
                     return;
                 }
 
@@ -773,8 +785,22 @@ namespace PresupuestoPro
                 .ToList();
         }
 
+        private UserRecursoViewModel? FindUserResourceUnderCursor(DependencyObject? source)
+        {
+            while (source != null)
+            {
+                // Buscar en el árbol visual hasta encontrar un TextBlock o Border que sea parte de la plantilla del recurso
+                if (source is FrameworkElement fe && fe.DataContext is UserRecursoViewModel resource)
+                {
+                    return resource;
+                }
+                source = VisualTreeHelper.GetParent(source);
+            }
+            return null;
+        }
+
         // Drop en el área principal del proyecto
-        private void ProjectArea_Drop(object sender, DragEventArgs e)
+        private async void ProjectArea_Drop(object sender, DragEventArgs e)
         {
             
             if (e.Data.GetDataPresent("DRAG_DROP_DATA"))
@@ -783,7 +809,7 @@ namespace PresupuestoPro
                 var mainVm = DataContext as MainViewModel;
                 if (mainVm != null)
                 {
-                    _ = DragDropService.HandleDrop(mainVm, dragData);
+                    await DragDropService.HandleDrop(mainVm, dragData);
                     e.Handled = true;
                 }
             }
@@ -908,6 +934,8 @@ namespace PresupuestoPro
 
             vm.UpdateProjectTotal();
         }
+
+
 
 
 

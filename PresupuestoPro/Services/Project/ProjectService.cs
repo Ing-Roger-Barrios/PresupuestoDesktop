@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using PresupuestoPro.Models.Project;
 using PresupuestoPro.ViewModels.Project;
+using PresupuestoPro.Services.Pricing;
 
 namespace PresupuestoPro.Services.Project
 {
@@ -21,7 +22,12 @@ namespace PresupuestoPro.Services.Project
         {
             return await Task.Run(() =>
             {
-                var projectVm = new ProjectViewModel { Name = projectName };
+                var defaultNormName = new PricingNormService().GetDefaultNormName();
+                var projectVm = new ProjectViewModel
+                {
+                    Name = projectName,
+                    PricingNormName = defaultNormName
+                };
                 return projectVm;
             });
         }

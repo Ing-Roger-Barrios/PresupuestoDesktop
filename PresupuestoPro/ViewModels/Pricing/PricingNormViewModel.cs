@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using PresupuestoPro.Models.Pricing;
 using PresupuestoPro.Services.Pricing;
 using System.Windows;
+using System.Linq;
 
 
 namespace PresupuestoPro.ViewModels.Pricing
@@ -13,7 +14,7 @@ namespace PresupuestoPro.ViewModels.Pricing
     public partial class PricingNormViewModel : ObservableObject
     {
         private readonly PricingNormService _service;
-        // Eliminamos _originalRules y HasChanges
+        private readonly Action<string>? _applyNormToProject;
 
         [ObservableProperty]
         private ObservableCollection<PricingRule> _rules = new();
@@ -30,11 +31,21 @@ namespace PresupuestoPro.ViewModels.Pricing
         [ObservableProperty]
         private string? _selectedNorm;
 
-        public PricingNormViewModel()
+        [ObservableProperty]
+        private string _projectNormName = string.Empty;
+
+        public PricingNormViewModel(
+            PricingNormService service,
+            string projectNormName,
+            Action<string>? applyNormToProject = null)
         {
-            _service = new PricingNormService();
+            _service = service;
+            _applyNormToProject = applyNormToProject;
+            ProjectNormName = projectNormName;
             LoadNormNames();
-            LoadSelectedNorm();
+            SelectedNorm = NormNames.Contains(projectNormName)
+                ? projectNormName
+                : NormNames.FirstOrDefault();
         }
 
         private void LoadNormNames()
@@ -74,6 +85,13 @@ namespace PresupuestoPro.ViewModels.Pricing
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(CurrentName))
+                {
+                    MessageBox.Show("Escriba un nombre para la norma.", "Nombre requerido",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 // Si el nombre actual no está en la lista, es una nueva norma
                 bool isNewNorm = !NormNames.Contains(CurrentName);
 
@@ -88,7 +106,6 @@ namespace PresupuestoPro.ViewModels.Pricing
 
                 MessageBox.Show("Norma guardada exitosamente.", "Éxito",
                                MessageBoxButton.OK, MessageBoxImage.Information);
-                // 👇 NOTIFICAR QUE LA NORMA CAMBIÓ
                 PricingNormChangedService.NotifyNormChanged();
             }
             catch (Exception ex)
@@ -96,6 +113,55 @@ namespace PresupuestoPro.ViewModels.Pricing
                 MessageBox.Show($"Error al guardar: {ex.Message}", "Error",
                                MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        [RelayCommand]
+        private void ApplySelectedNorm()
+        {
+            var normToApply = !string.IsNullOrWhiteSpace(SelectedNorm)
+                ? SelectedNorm
+                : CurrentName;
+
+            if (string.IsNullOrWhiteSpace(normToApply))
+            {
+                MessageBox.Show("Seleccione una norma para aplicar al proyecto.", "Norma requerida",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            _applyNormToProject?.Invoke(normToApply);
+            ProjectNormName = normToApply;
+
+            MessageBox.Show($"La norma \"{normToApply}\" ahora está asignada al proyecto.",
+                "Norma aplicada", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        [RelayCommand]
+        private void CreateNewNorm()
+        {
+            var baseRules = Rules.Select(rule => new PricingRule
+            {
+                Code = rule.Code,
+                Description = rule.Description,
+                Percentage = rule.Percentage,
+                Formula = rule.Formula,
+                IsEditable = rule.IsEditable
+            }).ToList();
+
+            Rules = new ObservableCollection<PricingRule>(baseRules);
+            SelectedNorm = null;
+            IsDefault = false;
+
+            var baseName = "Nueva norma";
+            var suffix = 1;
+            var candidate = baseName;
+            while (NormNames.Contains(candidate))
+            {
+                suffix++;
+                candidate = $"{baseName} {suffix}";
+            }
+
+            CurrentName = candidate;
         }
     }
 }

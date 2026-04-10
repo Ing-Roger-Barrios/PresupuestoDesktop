@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using PresupuestoPro.Services.Pricing;
+using PresupuestoPro.Services.Project;
 using PresupuestoPro.ViewModels;
 using PresupuestoPro.ViewModels.Project;
 using PresupuestoPro.ViewModels.UserCatalog;
@@ -54,40 +55,51 @@ namespace PresupuestoPro.Services.DragDrop
             }
             if (module == null) return;
 
-            switch (data.Type)
+            var busyMessage = data.Type switch
             {
-                // ── Catálogo servidor ─────────────────────────────────
-                case DragDropType.Category:
-                    await HandleCategoryDrop(mainVm,
-                        (CatalogGroupViewModel)data.Data, module);
-                    break;
-                case DragDropType.Module:
-                    await HandleModuleDrop(mainVm,
-                        data.MultipleData.Cast<ModuloViewModel>(), module);
-                    break;
-                case DragDropType.Item:
-                    await HandleItemDrop(mainVm,
-                        data.MultipleData.Cast<CatalogItemViewModel>(), module);
-                    break;
-                case DragDropType.Resource:
-                    await HandleResourceDrop(mainVm,
-                        data.MultipleData.Cast<ResourceViewModel>(), module);
-                    break;
+                DragDropType.Category => "Agregando categoría del servidor...",
+                DragDropType.Module => "Agregando módulos del servidor...",
+                DragDropType.Item => "Agregando items del servidor...",
+                DragDropType.UserCategory => "Agregando categoría de usuario...",
+                DragDropType.UserModule => "Agregando módulos de usuario...",
+                DragDropType.UserItem => "Agregando items de usuario...",
+                _ => "Agregando al proyecto..."
+            };
 
-                // ── Catálogo usuario ──────────────────────────────────
-                case DragDropType.UserCategory:
-                    await HandleUserCategoryDrop(mainVm,
-                        (UserCategoriaViewModel)data.Data);
-                    break;
-                case DragDropType.UserModule:
-                    await HandleUserModuleDrop(mainVm,
-                        data.MultipleData.Cast<UserModuloViewModel>(), module);
-                    break;
-                case DragDropType.UserItem:
-                    await HandleUserItemDrop(mainVm,
-                        data.MultipleData.Cast<UserItemViewModel>(), module);
-                    break;
-            }
+            await mainVm.RunBusyOperationAsync(busyMessage, async () =>
+            {
+                switch (data.Type)
+                {
+                    case DragDropType.Category:
+                        await HandleCategoryDrop(mainVm,
+                            (CatalogGroupViewModel)data.Data, module);
+                        break;
+                    case DragDropType.Module:
+                        await HandleModuleDrop(mainVm,
+                            data.MultipleData.Cast<ModuloViewModel>(), module);
+                        break;
+                    case DragDropType.Item:
+                        await HandleItemDrop(mainVm,
+                            data.MultipleData.Cast<CatalogItemViewModel>(), module);
+                        break;
+                    case DragDropType.Resource:
+                        await HandleResourceDrop(mainVm,
+                            data.MultipleData.Cast<ResourceViewModel>(), module);
+                        break;
+                    case DragDropType.UserCategory:
+                        await HandleUserCategoryDrop(mainVm,
+                            (UserCategoriaViewModel)data.Data);
+                        break;
+                    case DragDropType.UserModule:
+                        await HandleUserModuleDrop(mainVm,
+                            data.MultipleData.Cast<UserModuloViewModel>(), module);
+                        break;
+                    case DragDropType.UserItem:
+                        await HandleUserItemDrop(mainVm,
+                            data.MultipleData.Cast<UserItemViewModel>(), module);
+                        break;
+                }
+            });
         }
 
         // ═════════════════════════════════════════════════════════════
@@ -99,52 +111,90 @@ namespace PresupuestoPro.Services.DragDrop
         {
             var newProject = await mainVm._projectService.CreateNewProjectAsync(category.Name);
             mainVm.CurrentProject = newProject;
-            mainVm.ProjectModules.Clear();
 
-            foreach (var modulo in category.Items)
+            GlobalResourceService.IsSuspended = true;
+            GlobalItemService.IsSuspended = true;
+            mainVm.BeginProjectModulesBulkUpdate();
+            try
             {
-                var newModule = new ProjectModuleViewModel { Name = modulo.Name };
-                await AddItemsToModule(modulo.Items, newModule);
-                mainVm.ProjectModules.Add(newModule);
+                mainVm.ProjectModules.Clear();
+
+                foreach (var modulo in category.Items)
+                {
+                    var newModule = await CreateProjectModuleFromCatalogModuleAsync(modulo);
+                    mainVm.ProjectModules.Add(newModule);
+                    await YieldToUiAsync();
+                }
+            }
+            finally
+            {
+                mainVm.EndProjectModulesBulkUpdate();
+                GlobalItemService.IsSuspended = false;
+                GlobalResourceService.IsSuspended = false;
             }
         }
 
         private static async Task HandleModuleDrop(MainViewModel mainVm,
             IEnumerable<ModuloViewModel> modulos, ProjectModuleViewModel targetModule)
         {
-            foreach (var modulo in modulos)
+            GlobalResourceService.IsSuspended = true;
+            GlobalItemService.IsSuspended = true;
+            mainVm.BeginProjectModulesBulkUpdate();
+            try
             {
-                var newModule = new ProjectModuleViewModel { Name = modulo.Name };
-                await AddItemsToModule(modulo.Items, newModule);
-                mainVm.ProjectModules.Add(newModule);
+                foreach (var modulo in modulos)
+                {
+                    var newModule = await CreateProjectModuleFromCatalogModuleAsync(modulo);
+                    mainVm.ProjectModules.Add(newModule);
+                    await YieldToUiAsync();
+                }
+            }
+            finally
+            {
+                mainVm.EndProjectModulesBulkUpdate();
+                GlobalItemService.IsSuspended = false;
+                GlobalResourceService.IsSuspended = false;
             }
         }
 
         private static async Task HandleItemDrop(MainViewModel mainVm,
             IEnumerable<CatalogItemViewModel> items, ProjectModuleViewModel targetModule)
         {
-            foreach (var item in items)
+            GlobalResourceService.IsSuspended = true;
+            GlobalItemService.IsSuspended = true;
+            targetModule.BeginBulkUpdate();
+            try
             {
-                if (IsItemDuplicateInModule(targetModule, item))
+                foreach (var item in items)
                 {
-                    var result = MessageBox.Show(
-                        $"Ya existe un item con el mismo nombre y unidad.\n\n¿Desea crear una copia?",
-                        "Item duplicado", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-                    if (result == MessageBoxResult.Yes)
+                    if (IsItemDuplicateInModule(targetModule, item))
                     {
-                        var newItem = CreateProjectItemFromCatalogItem(item, _pricingService);
-                        newItem.Description = GenerateUniqueItemName(
-                            targetModule, GetDescriptionFromDisplay(item.Display));
-                        targetModule.Items.Add(newItem);
+                        var result = MessageBox.Show(
+                            $"Ya existe un item con el mismo nombre y unidad.\n\n¿Desea crear una copia?",
+                            "Item duplicado", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            var newItem = CreateProjectItemFromCatalogItem(item, _pricingService);
+                            newItem.Description = GenerateUniqueItemName(
+                                targetModule, GetDescriptionFromDisplay(item.Display));
+                            targetModule.Items.Add(newItem);
+                        }
+                    }
+                    else
+                    {
+                        targetModule.Items.Add(
+                            CreateProjectItemFromCatalogItem(item, _pricingService));
                     }
                 }
-                else
-                {
-                    targetModule.Items.Add(
-                        CreateProjectItemFromCatalogItem(item, _pricingService));
-                }
             }
+            finally
+            {
+                targetModule.EndBulkUpdate();
+                GlobalItemService.IsSuspended = false;
+                GlobalResourceService.IsSuspended = false;
+            }
+
             mainVm.UpdateProjectTotal();
         }
 
@@ -175,13 +225,26 @@ namespace PresupuestoPro.Services.DragDrop
             var newProject = await mainVm._projectService
                 .CreateNewProjectAsync(categoria.Nombre);
             mainVm.CurrentProject = newProject;
-            mainVm.ProjectModules.Clear();
 
-            foreach (var modulo in categoria.Modulos)
+            GlobalResourceService.IsSuspended = true;
+            GlobalItemService.IsSuspended = true;
+            mainVm.BeginProjectModulesBulkUpdate();
+            try
             {
-                var newModule = new ProjectModuleViewModel { Name = modulo.Nombre };
-                AddUserItemsToModule(modulo.Items, newModule);
-                mainVm.ProjectModules.Add(newModule);
+                mainVm.ProjectModules.Clear();
+
+                foreach (var modulo in categoria.Modulos)
+                {
+                    var newModule = await CreateProjectModuleFromUserModuleAsync(modulo);
+                    mainVm.ProjectModules.Add(newModule);
+                    await YieldToUiAsync();
+                }
+            }
+            finally
+            {
+                mainVm.EndProjectModulesBulkUpdate();
+                GlobalItemService.IsSuspended = false;
+                GlobalResourceService.IsSuspended = false;
             }
             mainVm.UpdateProjectTotal();
         }
@@ -189,11 +252,23 @@ namespace PresupuestoPro.Services.DragDrop
         private static async Task HandleUserModuleDrop(MainViewModel mainVm,
             IEnumerable<UserModuloViewModel> modulos, ProjectModuleViewModel targetModule)
         {
-            foreach (var modulo in modulos)
+            GlobalResourceService.IsSuspended = true;
+            GlobalItemService.IsSuspended = true;
+            mainVm.BeginProjectModulesBulkUpdate();
+            try
             {
-                var newModule = new ProjectModuleViewModel { Name = modulo.Nombre };
-                AddUserItemsToModule(modulo.Items, newModule);
-                mainVm.ProjectModules.Add(newModule);
+                foreach (var modulo in modulos)
+                {
+                    var newModule = await CreateProjectModuleFromUserModuleAsync(modulo);
+                    mainVm.ProjectModules.Add(newModule);
+                    await YieldToUiAsync();
+                }
+            }
+            finally
+            {
+                mainVm.EndProjectModulesBulkUpdate();
+                GlobalItemService.IsSuspended = false;
+                GlobalResourceService.IsSuspended = false;
             }
             mainVm.UpdateProjectTotal();
         }
@@ -201,35 +276,44 @@ namespace PresupuestoPro.Services.DragDrop
         private static async Task HandleUserItemDrop(MainViewModel mainVm,
             IEnumerable<UserItemViewModel> items, ProjectModuleViewModel targetModule)
         {
-            foreach (var item in items)
+            GlobalResourceService.IsSuspended = true;
+            GlobalItemService.IsSuspended = true;
+            targetModule.BeginBulkUpdate();
+            try
             {
-                // ✅ Misma validación que el servidor
-                bool duplicado = targetModule.Items.Any(i =>
-                    i.Code == item.Codigo &&
-                    i.Description == item.Descripcion &&
-                    i.Unit == item.Unidad);
-
-                if (duplicado)
+                foreach (var item in items)
                 {
-                    var result = MessageBox.Show(
-                        $"Ya existe '{item.Descripcion}' en este módulo.\n\n¿Desea crear una copia?",
-                        "Item duplicado", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    bool duplicado = targetModule.Items.Any(i =>
+                        i.Code == item.Codigo &&
+                        i.Description == item.Descripcion &&
+                        i.Unit == item.Unidad);
 
-                    if (result == MessageBoxResult.Yes)
+                    if (duplicado)
                     {
-                        var newItem = CreateProjectItemFromUserItem(item, _pricingService);
-                        // ✅ Reusar GenerateUniqueItemName
-                        newItem.Description = GenerateUniqueItemName(
-                            targetModule, item.Descripcion);
-                        targetModule.Items.Add(newItem);
+                        var result = MessageBox.Show(
+                            $"Ya existe '{item.Descripcion}' en este módulo.\n\n¿Desea crear una copia?",
+                            "Item duplicado", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            var newItem = CreateProjectItemFromUserItem(item, _pricingService);
+                            newItem.Description = GenerateUniqueItemName(
+                                targetModule, item.Descripcion);
+                            targetModule.Items.Add(newItem);
+                        }
                     }
-                    // Si No, no agregar nada
+                    else
+                    {
+                        targetModule.Items.Add(
+                            CreateProjectItemFromUserItem(item, _pricingService));
+                    }
                 }
-                else
-                {
-                    targetModule.Items.Add(
-                        CreateProjectItemFromUserItem(item, _pricingService));
-                }
+            }
+            finally
+            {
+                targetModule.EndBulkUpdate();
+                GlobalItemService.IsSuspended = false;
+                GlobalResourceService.IsSuspended = false;
             }
             mainVm.UpdateProjectTotal();
         }
@@ -246,6 +330,7 @@ namespace PresupuestoPro.Services.DragDrop
                 Unit = userItem.Unidad,
                 Quantity = 0
             };
+            item.BeginBulkUpdate();
 
             foreach (var rec in userItem.Recursos)
             {
@@ -263,7 +348,7 @@ namespace PresupuestoPro.Services.DragDrop
             }
 
             item.InitializeWithGlobalConfiguration();
-            item.RecalculateUnitPrice();
+            item.EndBulkUpdate();
             return item;
         }
 
@@ -271,9 +356,46 @@ namespace PresupuestoPro.Services.DragDrop
             IEnumerable<UserItemViewModel> items,
             ProjectModuleViewModel module)
         {
+            module.BeginBulkUpdate();
             foreach (var item in items)
                 module.Items.Add(
                     CreateProjectItemFromUserItem(item, _pricingService));
+            module.EndBulkUpdate();
+        }
+
+        private static async Task<ProjectModuleViewModel> CreateProjectModuleFromCatalogModuleAsync(
+            ModuloViewModel modulo)
+        {
+            return await Task.Run(() =>
+            {
+                var module = new ProjectModuleViewModel { Name = modulo.Name };
+                module.BeginBulkUpdate();
+                foreach (var item in modulo.Items)
+                    module.Items.Add(CreateProjectItemFromCatalogItem(item, _pricingService));
+                module.EndBulkUpdate();
+                return module;
+            });
+        }
+
+        private static async Task<ProjectModuleViewModel> CreateProjectModuleFromUserModuleAsync(
+            UserModuloViewModel modulo)
+        {
+            return await Task.Run(() =>
+            {
+                var module = new ProjectModuleViewModel { Name = modulo.Nombre };
+                module.BeginBulkUpdate();
+                foreach (var item in modulo.Items)
+                    module.Items.Add(CreateProjectItemFromUserItem(item, _pricingService));
+                module.EndBulkUpdate();
+                return module;
+            });
+        }
+
+        private static async Task YieldToUiAsync()
+        {
+            await Application.Current.Dispatcher.InvokeAsync(
+                () => { },
+                System.Windows.Threading.DispatcherPriority.Background);
         }
 
         // ═════════════════════════════════════════════════════════════
@@ -284,9 +406,21 @@ namespace PresupuestoPro.Services.DragDrop
             IEnumerable<CatalogItemViewModel> catalogItems,
             ProjectModuleViewModel module)
         {
+            module.BeginBulkUpdate();
+            var processedItems = 0;
             foreach (var item in catalogItems)
+            {
                 module.Items.Add(
                     CreateProjectItemFromCatalogItem(item, _pricingService));
+                processedItems++;
+                if (processedItems % 20 == 0)
+                {
+                    await Application.Current.Dispatcher.InvokeAsync(
+                        () => { },
+                        System.Windows.Threading.DispatcherPriority.Background);
+                }
+            }
+            module.EndBulkUpdate();
         }
 
         private static ProjectItemViewModel CreateProjectItemFromCatalogItem(
@@ -300,6 +434,7 @@ namespace PresupuestoPro.Services.DragDrop
                 Unit = catalogItem.Unidad,
                 Quantity = 0
             };
+            item.BeginBulkUpdate();
 
             foreach (var resource in catalogItem.Recursos)
             {
@@ -316,7 +451,7 @@ namespace PresupuestoPro.Services.DragDrop
             }
 
             item.InitializeWithGlobalConfiguration();
-            item.RecalculateUnitPrice();
+            item.EndBulkUpdate();
             return item;
         }
 

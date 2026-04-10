@@ -82,6 +82,17 @@ namespace PresupuestoPro.Services.Pricing
             return connection.Table<PricingNorm>().Select(n => n.Name).ToList();
         }
 
+        public string GetDefaultNormName()
+        {
+            using var connection = new SQLiteConnection(_dbPath);
+            var defaultNorm = connection.Table<PricingNorm>().FirstOrDefault(n => n.IsDefault);
+            if (defaultNorm != null && !string.IsNullOrWhiteSpace(defaultNorm.Name))
+                return defaultNorm.Name;
+
+            return connection.Table<PricingNorm>().Select(n => n.Name).FirstOrDefault()
+                ?? "Norma SABS Bolivia";
+        }
+
         public List<PricingRule> GetNormRules(string name)
         {
             using var connection = new SQLiteConnection(_dbPath);
@@ -96,6 +107,17 @@ namespace PresupuestoPro.Services.Pricing
         public void SaveNorm(string name, List<PricingRule> rules, bool isDefault = false)
         {
             using var connection = new SQLiteConnection(_dbPath);
+
+            if (isDefault)
+            {
+                var currentDefaults = connection.Table<PricingNorm>().Where(n => n.IsDefault).ToList();
+                foreach (var norm in currentDefaults)
+                {
+                    norm.IsDefault = false;
+                    connection.Update(norm);
+                }
+            }
+
             var existing = connection.Table<PricingNorm>().FirstOrDefault(n => n.Name == name);
 
             if (existing != null)

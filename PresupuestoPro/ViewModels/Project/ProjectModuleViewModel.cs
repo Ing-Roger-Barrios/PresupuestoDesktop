@@ -16,6 +16,7 @@ namespace PresupuestoPro.ViewModels.Project
 
         // Callback hacia MainViewModel para recalcular TotalProyecto
         private Action? _onSubtotalChanged;
+        private int _bulkUpdateDepth = 0;
 
         public ProjectModuleViewModel(
             IItemReorderService? reorderService = null,
@@ -47,6 +48,20 @@ namespace PresupuestoPro.ViewModels.Project
             Subtotal = Items.Sum(i => i.Total);
         }
 
+        public void BeginBulkUpdate()
+        {
+            _bulkUpdateDepth++;
+        }
+
+        public void EndBulkUpdate(bool recalculateSubtotal = true)
+        {
+            if (_bulkUpdateDepth > 0)
+                _bulkUpdateDepth--;
+
+            if (_bulkUpdateDepth == 0 && recalculateSubtotal)
+                RecalculateSubtotal();
+        }
+
         // ── Cuando se agrega/quita un ítem, suscribirse/desuscribirse ─────
         private void OnItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
@@ -58,13 +73,14 @@ namespace PresupuestoPro.ViewModels.Project
                 foreach (ProjectItemViewModel item in e.OldItems)
                     item.PropertyChanged -= OnItemPropertyChanged;
 
-            RecalculateSubtotal();
+            if (_bulkUpdateDepth == 0)
+                RecalculateSubtotal();
         }
 
         // ── Cuando cambia Total en cualquier ítem → recalcular subtotal ───
         private void OnItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(ProjectItemViewModel.Total))
+            if (_bulkUpdateDepth == 0 && e.PropertyName == nameof(ProjectItemViewModel.Total))
                 RecalculateSubtotal();
         }
 

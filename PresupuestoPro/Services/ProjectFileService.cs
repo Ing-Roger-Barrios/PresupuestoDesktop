@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Threading.Tasks;
 using PresupuestoPro.Services.Project;
+using System.Windows;
 
 namespace PresupuestoPro.Services
 {
@@ -39,6 +40,9 @@ namespace PresupuestoPro.Services
 
         [JsonPropertyName("descripcion")]
         public string? Descripcion { get; set; }
+
+        [JsonPropertyName("normaPrecios")]
+        public string NormaPrecios { get; set; } = "Norma SABS Bolivia";
 
         [JsonPropertyName("modulos")]
         public List<CosModulo> Modulos { get; set; } = new();
@@ -113,7 +117,8 @@ namespace PresupuestoPro.Services
         public async Task SaveAsync(
             string filePath,
             string projectName,
-            IEnumerable<ViewModels.Project.ProjectModuleViewModel> modulos)
+            IEnumerable<ViewModels.Project.ProjectModuleViewModel> modulos,
+            string pricingNormName)
         {
             var cosFile = new CosFile
             {
@@ -122,6 +127,7 @@ namespace PresupuestoPro.Services
                 Proyecto = new CosProyecto
                 {
                     Nombre = projectName,
+                    NormaPrecios = pricingNormName,
                     Modulos = MapModulos(modulos)
                 }
             };
@@ -194,11 +200,12 @@ namespace PresupuestoPro.Services
             return result;
         }
 
-        public List<ViewModels.Project.ProjectModuleViewModel> BuildViewModels(
+        public async Task<List<ViewModels.Project.ProjectModuleViewModel>> BuildViewModelsAsync(
     CosFile cosFile,
     Services.Pricing.ProjectPricingService pricingService)
         {
             var result = new List<ViewModels.Project.ProjectModuleViewModel>();
+            var processedItems = 0;
 
             // ✅ Suspender AMBOS servicios globales durante la carga masiva
             GlobalResourceService.IsSuspended = true;
@@ -212,6 +219,7 @@ namespace PresupuestoPro.Services
                     {
                         Name = cosModulo.Nombre
                     };
+                    moduleVm.BeginBulkUpdate();
 
                     foreach (var cosItem in cosModulo.Items)
                     {
@@ -223,6 +231,7 @@ namespace PresupuestoPro.Services
                             Quantity = cosItem.Cantidad,
                             UnitPrice = cosItem.PrecioUnitario
                         };
+                        itemVm.BeginBulkUpdate();
 
                         foreach (var cosR in cosItem.Recursos)
                         {
@@ -241,9 +250,18 @@ namespace PresupuestoPro.Services
                             r.SetCallback(() => itemVm.RecalculateUnitPrice());
                         itemVm.Total = cosItem.Total;
                         moduleVm.Items.Add(itemVm);
+                        itemVm.EndBulkUpdate(recalculatePrice: false);
+
+                        processedItems++;
+                        if (processedItems % 20 == 0)
+                        {
+                            await Application.Current.Dispatcher.InvokeAsync(
+                                () => { },
+                                System.Windows.Threading.DispatcherPriority.Background);
+                        }
                     }
 
-                    moduleVm.RecalculateSubtotal();
+                    moduleVm.EndBulkUpdate(recalculateSubtotal: true);
                     result.Add(moduleVm);
                 }
             }

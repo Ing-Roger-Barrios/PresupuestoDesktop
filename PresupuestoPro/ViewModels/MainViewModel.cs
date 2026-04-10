@@ -76,6 +76,8 @@ namespace PresupuestoPro.ViewModels
         private readonly DdpParserService _ddpParser;
         private CancellationTokenSource? _searchDebounceCts;
         private const int SearchApplyBatchSize = 40;
+        private int _projectModulesBulkDepth;
+        private bool _projectTotalDirty;
 
 
         public readonly ProjectPricingService _projectPricingService;
@@ -127,6 +129,12 @@ namespace PresupuestoPro.ViewModels
 
         [ObservableProperty]
         private bool _searchResources;
+
+        [ObservableProperty]
+        private bool _isBusy;
+
+        [ObservableProperty]
+        private string _busyMessage = "Procesando...";
 
         [ObservableProperty]
         private bool _isSearching;
@@ -309,8 +317,8 @@ namespace PresupuestoPro.ViewModels
 
         partial void OnCurrentProjectChanged(ProjectViewModel? value)
         {
-            // Ensure the property 'CurrentProjectName' exists and is updated correctly.  
             CurrentProjectName = value?.Name ?? "Sin proyecto";
+            _projectPricingService.SetCurrentNorm(value?.PricingNormName);
             WindowTitle = value != null ? $"Costeo360 — {value.Name}" : "Costeo360";
         }
 
@@ -549,6 +557,12 @@ namespace PresupuestoPro.ViewModels
                 foreach (ProjectModuleViewModel m in e.OldItems)
                     m.PropertyChanged -= OnModulePropertyChanged;
 
+            if (_projectModulesBulkDepth > 0)
+            {
+                _projectTotalDirty = true;
+                return;
+            }
+
             UpdateProjectTotal();
         }
 
@@ -556,7 +570,32 @@ namespace PresupuestoPro.ViewModels
         System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(ProjectModuleViewModel.Subtotal))
+            {
+                if (_projectModulesBulkDepth > 0)
+                {
+                    _projectTotalDirty = true;
+                    return;
+                }
+
                 UpdateProjectTotal();
+            }
+        }
+
+        public void BeginProjectModulesBulkUpdate()
+        {
+            _projectModulesBulkDepth++;
+        }
+
+        public void EndProjectModulesBulkUpdate(bool updateProjectTotal = true)
+        {
+            if (_projectModulesBulkDepth > 0)
+                _projectModulesBulkDepth--;
+
+            if (_projectModulesBulkDepth == 0 && updateProjectTotal && _projectTotalDirty)
+            {
+                _projectTotalDirty = false;
+                UpdateProjectTotal();
+            }
         }
 
 
@@ -623,8 +662,11 @@ namespace PresupuestoPro.ViewModels
                 ConnectionStatusText = "Guardando...";
                 ConnectionStatusColor = Brushes.Orange;
 
-                var projectName = Path.GetFileNameWithoutExtension(filePath);
-                await _fileService.SaveAsync(filePath, projectName, ProjectModules);
+                var projectName = !string.IsNullOrWhiteSpace(CurrentProjectName) && CurrentProjectName != "Sin proyecto"
+                    ? CurrentProjectName
+                    : Path.GetFileNameWithoutExtension(filePath);
+                var pricingNormName = CurrentProject?.PricingNormName ?? _projectPricingService.CurrentNormName;
+                await _fileService.SaveAsync(filePath, projectName, ProjectModules, pricingNormName);
 
                 CurrentFilePath = filePath;
                 ConnectionStatusText = $"Guardado: {Path.GetFileName(filePath)}";
@@ -649,7 +691,7 @@ namespace PresupuestoPro.ViewModels
                 ConnectionStatusColor = Brushes.Orange;
 
                 var (cosFile, projectName) = await _fileService.LoadAsync(filePath);
-                var modulos = _fileService.BuildViewModels(cosFile, _projectPricingService);
+                var modulos = await _fileService.BuildViewModelsAsync(cosFile, _projectPricingService);
 
                 ProjectModules.Clear();
                 foreach (var m in modulos)
@@ -673,69 +715,90 @@ namespace PresupuestoPro.ViewModels
 
         public async Task LoadFromPath(string filePath)
         {
-            try
+            await RunBusyOperationAsync("Abriendo proyecto...", async () =>
             {
-                ConnectionStatusText = "Abriendo archivo...";
-                ConnectionStatusColor = Brushes.Orange;
+                try
+                {
+                    ConnectionStatusText = "Abriendo archivo...";
+                    ConnectionStatusColor = Brushes.Orange;
 
-                var swTotal = System.Diagnostics.Stopwatch.StartNew();
+                    var swTotal = System.Diagnostics.Stopwatch.StartNew();
 
-                // ── 1. Lectura del archivo ────────────────────────────────────
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                var json = await File.ReadAllTextAsync(filePath);
-                sw.Stop();
-                System.Diagnostics.Debug.WriteLine(
-                    $"[COS] 1. Leer archivo ({json.Length / 1024} KB): {sw.ElapsedMilliseconds}ms");
+                    // ── 1. Lectura del archivo ────────────────────────────────────
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    var json = await File.ReadAllTextAsync(filePath);
+                    sw.Stop();
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[COS] 1. Leer archivo ({json.Length / 1024} KB): {sw.ElapsedMilliseconds}ms");
 
-                // ── 2. Deserialización JSON ───────────────────────────────────
-                sw.Restart();
-                var (cosFile, projectName) = await _fileService.LoadAsync(filePath);
-                sw.Stop();
-                System.Diagnostics.Debug.WriteLine(
-                    $"[COS] 2. Deserializar JSON " +
-                    $"({cosFile.Proyecto.Modulos.Count} módulos, " +
-                    $"{cosFile.Proyecto.Modulos.Sum(m => m.Items.Count)} ítems, " +
-                    $"{cosFile.Proyecto.Modulos.Sum(m => m.Items.Sum(i => i.Recursos.Count))} recursos): " +
-                    $"{sw.ElapsedMilliseconds}ms");
+                    // ── 2. Deserialización JSON ───────────────────────────────────
+                    sw.Restart();
+                    var (cosFile, projectName) = await _fileService.LoadAsync(filePath);
+                    var pricingNormName = string.IsNullOrWhiteSpace(cosFile.Proyecto.NormaPrecios)
+                        ? new PricingNormService().GetDefaultNormName()
+                        : cosFile.Proyecto.NormaPrecios;
+                    sw.Stop();
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[COS] 2. Deserializar JSON " +
+                        $"({cosFile.Proyecto.Modulos.Count} módulos, " +
+                        $"{cosFile.Proyecto.Modulos.Sum(m => m.Items.Count)} ítems, " +
+                        $"{cosFile.Proyecto.Modulos.Sum(m => m.Items.Sum(i => i.Recursos.Count))} recursos): " +
+                        $"{sw.ElapsedMilliseconds}ms");
 
-                // ── 3. BuildViewModels ────────────────────────────────────────
-                sw.Restart();
-                // 👇 ASIGNAR EL NOMBRE DEL PROYECTO (esto actualiza la UI automáticamente)
-                CurrentProjectName = !string.IsNullOrWhiteSpace(projectName)
-                    ? projectName
-                    : Path.GetFileNameWithoutExtension(filePath);
-                var modulos = _fileService.BuildViewModels(cosFile, _projectPricingService);
-                sw.Stop();
-                System.Diagnostics.Debug.WriteLine(
-                    $"[COS] 3. BuildViewModels: {sw.ElapsedMilliseconds}ms");
+                    // ── 3. BuildViewModels ────────────────────────────────────────
+                    sw.Restart();
+                    CurrentProject = new ProjectViewModel
+                    {
+                        Name = !string.IsNullOrWhiteSpace(projectName)
+                            ? projectName
+                            : Path.GetFileNameWithoutExtension(filePath),
+                        PricingNormName = pricingNormName
+                    };
+                    CurrentProjectName = !string.IsNullOrWhiteSpace(projectName)
+                        ? projectName
+                        : Path.GetFileNameWithoutExtension(filePath);
+                    _projectPricingService.SetCurrentNorm(pricingNormName);
+                    var modulos = await _fileService.BuildViewModelsAsync(cosFile, _projectPricingService);
+                    sw.Stop();
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[COS] 3. BuildViewModels: {sw.ElapsedMilliseconds}ms");
 
-                // ── 4. Actualizar UI ──────────────────────────────────────────
-                sw.Restart();
-                ProjectModules.Clear();
-                foreach (var m in modulos)
-                    ProjectModules.Add(m);
+                    // ── 4. Actualizar UI ──────────────────────────────────────────
+                    sw.Restart();
+                    BeginProjectModulesBulkUpdate();
+                    try
+                    {
+                        ProjectModules.Clear();
+                        foreach (var m in modulos)
+                            ProjectModules.Add(m);
+                    }
+                    finally
+                    {
+                        EndProjectModulesBulkUpdate();
+                    }
 
-                SelectedModule = ProjectModules.FirstOrDefault();
-                CurrentFilePath = filePath;
-                UpdateProjectTotal();
-                sw.Stop();
-                System.Diagnostics.Debug.WriteLine(
-                    $"[COS] 4. Actualizar UI: {sw.ElapsedMilliseconds}ms");
+                    SelectedModule = ProjectModules.FirstOrDefault();
+                    CurrentFilePath = filePath;
+                    UpdateProjectTotal();
+                    sw.Stop();
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[COS] 4. Actualizar UI: {sw.ElapsedMilliseconds}ms");
 
-                swTotal.Stop();
-                System.Diagnostics.Debug.WriteLine(
-                    $"[COS] TOTAL: {swTotal.ElapsedMilliseconds}ms");
+                    swTotal.Stop();
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[COS] TOTAL: {swTotal.ElapsedMilliseconds}ms");
 
-                ConnectionStatusText = $"Abierto: {Path.GetFileName(filePath)}";
-                ConnectionStatusColor = Brushes.Green;
-            }
-            catch (Exception ex)
-            {
-                ConnectionStatusText = "Error al abrir";
-                ConnectionStatusColor = Brushes.Red;
-                MessageBox.Show($"Error al abrir el archivo:\n\n{ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+                    ConnectionStatusText = $"Abierto: {Path.GetFileName(filePath)}";
+                    ConnectionStatusColor = Brushes.Green;
+                }
+                catch (Exception ex)
+                {
+                    ConnectionStatusText = "Error al abrir";
+                    ConnectionStatusColor = Brushes.Red;
+                    MessageBox.Show($"Error al abrir el archivo:\n\n{ex.Message}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            });
         }
 
         private string? PickSaveFilePath()
@@ -789,12 +852,35 @@ namespace PresupuestoPro.ViewModels
         [RelayCommand]
         private void ConfigurePricing()
         {
-            var pricingVm = new PricingNormViewModel();
+            var projectNormName = CurrentProject?.PricingNormName ?? _projectPricingService.CurrentNormName;
+            var pricingVm = new PricingNormViewModel(
+                new PricingNormService(),
+                projectNormName,
+                ApplyPricingNormToCurrentProject);
             var pricingWindow = new ConfigurePricingWindow
             {
                 DataContext = pricingVm
             };
             pricingWindow.ShowDialog();
+        }
+
+        private void ApplyPricingNormToCurrentProject(string normName)
+        {
+            if (CurrentProject == null)
+            {
+                CurrentProject = new ProjectViewModel
+                {
+                    Name = CurrentProjectName == "Sin proyecto" ? "Nuevo Proyecto" : CurrentProjectName,
+                    PricingNormName = normName
+                };
+            }
+            else
+            {
+                CurrentProject.PricingNormName = normName;
+            }
+
+            _projectPricingService.SetCurrentNorm(normName);
+            RecalculateAllItemPrices();
         }
 
         private async Task InitializeAsync()
@@ -804,6 +890,26 @@ namespace PresupuestoPro.ViewModels
 
             // Paso 2: Verificar actualizaciones en segundo plano
             _ = CheckForUpdatesAsync(); // No esperar, ejecutar en background
+        }
+
+        public async Task RunBusyOperationAsync(string message, Func<Task> operation)
+        {
+            BusyMessage = message;
+            IsBusy = true;
+
+            await Application.Current.Dispatcher.InvokeAsync(
+                () => { },
+                System.Windows.Threading.DispatcherPriority.Render);
+
+            try
+            {
+                await operation();
+            }
+            finally
+            {
+                IsBusy = false;
+                BusyMessage = "Procesando...";
+            }
         }
 
 
@@ -834,59 +940,71 @@ namespace PresupuestoPro.ViewModels
                 if (confirm != MessageBoxResult.Yes) return;
             }
 
-            try
+            await RunBusyOperationAsync("Importando archivo DDP...", async () =>
             {
-                ConnectionStatusText = "Importando .DDP...";
-                ConnectionStatusColor = Brushes.Orange;
-
-                var modulos = await _ddpParser.ParseDdpAsync(
-                    filePath,
-                    onProgress: msg => Application.Current.Dispatcher.Invoke(
-                        () => ConnectionStatusText = msg));
-
-                if (modulos.Count == 0)
+                try
                 {
-                    MessageBox.Show("No se encontraron módulos válidos en el archivo.",
-                        "Sin datos", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
+                    ConnectionStatusText = "Importando .DDP...";
+                    ConnectionStatusColor = Brushes.Orange;
 
-                // Crear proyecto con el nombre del archivo
-                var projectName = System.IO.Path.GetFileNameWithoutExtension(filePath);
-                CurrentProject = await _projectService.CreateNewProjectAsync(projectName);
-                CurrentProjectName = projectName; // 👈 Esta línea asegura que se muestre el nombre
+                    var modulos = await _ddpParser.ParseDdpAsync(
+                        filePath,
+                        onProgress: msg => Application.Current.Dispatcher.Invoke(
+                            () => ConnectionStatusText = msg));
 
-                // Reemplazar módulos actuales
-                ProjectModules.Clear();
-                foreach (var modulo in modulos)
-                {
-                    ProjectModules.Add(modulo);
-                    modulo.RecalculateSubtotal();
-                }
+                    if (modulos.Count == 0)
+                    {
+                        MessageBox.Show("No se encontraron módulos válidos en el archivo.",
+                            "Sin datos", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    // Crear proyecto con el nombre del archivo
+                    var projectName = System.IO.Path.GetFileNameWithoutExtension(filePath);
+                    CurrentProject = await _projectService.CreateNewProjectAsync(projectName);
+                    CurrentProjectName = projectName;
+                    _projectPricingService.SetCurrentNorm(CurrentProject.PricingNormName);
+
+                    // Reemplazar módulos actuales
+                    BeginProjectModulesBulkUpdate();
+                    try
+                    {
+                        ProjectModules.Clear();
+                        foreach (var modulo in modulos)
+                        {
+                            ProjectModules.Add(modulo);
+                            modulo.RecalculateSubtotal();
+                        }
+                    }
+                    finally
+                    {
+                        EndProjectModulesBulkUpdate();
+                    }
                     
 
-                // Seleccionar el primer módulo
-                SelectedModule = ProjectModules.FirstOrDefault();
+                    // Seleccionar el primer módulo
+                    SelectedModule = ProjectModules.FirstOrDefault();
 
-                UpdateProjectTotal();
+                    UpdateProjectTotal();
 
-                var totalItems = modulos.Sum(m => m.Items.Count);
-                ConnectionStatusText = $"✅ .DDP importado — {modulos.Count} módulos, {totalItems} ítems";
-                ConnectionStatusColor = Brushes.Green;
+                    var totalItems = modulos.Sum(m => m.Items.Count);
+                    ConnectionStatusText = $"✅ .DDP importado — {modulos.Count} módulos, {totalItems} ítems";
+                    ConnectionStatusColor = Brushes.Green;
 
-                System.Diagnostics.Debug.WriteLine(
-                    $"[DDP] Importado: {modulos.Count} módulos, {totalItems} ítems");
-            }
-            catch (Exception ex)
-            {
-                ConnectionStatusText = "Error al importar .DDP";
-                ConnectionStatusColor = Brushes.Red;
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[DDP] Importado: {modulos.Count} módulos, {totalItems} ítems");
+                }
+                catch (Exception ex)
+                {
+                    ConnectionStatusText = "Error al importar .DDP";
+                    ConnectionStatusColor = Brushes.Red;
 
-                MessageBox.Show($"Error al importar el archivo:\n\n{ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Error al importar el archivo:\n\n{ex.Message}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
 
-                System.Diagnostics.Debug.WriteLine($"[DDP] Error: {ex}");
-            }
+                    System.Diagnostics.Debug.WriteLine($"[DDP] Error: {ex}");
+                }
+            });
         }
 
 
@@ -967,14 +1085,16 @@ namespace PresupuestoPro.ViewModels
         {
             SelectedCatalogNodesCount = CatalogGroups.Sum(category =>
                 category.Items.Count(module => module.IsSelected) +
-                category.Items.Sum(module => module.Items.Count(item => item.IsSelected)));
+                category.Items.Sum(module => module.Items.Count(item => item.IsSelected)) +
+                category.Items.Sum(module => module.Items.Sum(item => item.Recursos.Count(r => r.IsSelected))));
         }
 
         public void RefreshUserCatalogSelectionState()
         {
             SelectedUserCatalogNodesCount = UserCatalogGroups.Sum(category =>
                 category.Modulos.Count(module => module.IsSelected) +
-                category.Modulos.Sum(module => module.Items.Count(item => item.IsSelected)));
+                category.Modulos.Sum(module => module.Items.Count(item => item.IsSelected)) +
+                category.Modulos.Sum(module => module.Items.Sum(item => item.Recursos.Count(r => r.IsSelected))));
         }
 
         [RelayCommand]
@@ -991,6 +1111,11 @@ namespace PresupuestoPro.ViewModels
                     foreach (var item in module.Items)
                     {
                         item.IsSelected = false;
+
+                        foreach (var recurso in item.Recursos)
+                        {
+                            recurso.IsSelected = false;
+                        }
                     }
                 }
             }
@@ -1012,6 +1137,11 @@ namespace PresupuestoPro.ViewModels
                     foreach (var item in module.Items)
                     {
                         item.IsSelected = false;
+
+                        foreach (var recurso in item.Recursos)
+                        {
+                            recurso.IsSelected = false;
+                        }
                     }
                 }
             }

@@ -9,6 +9,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -18,17 +19,40 @@
             <TextBlock Text="Norma existente:" VerticalAlignment="Center" Margin="0,0,10,0"/>
             <ComboBox ItemsSource="{Binding NormNames}" 
                       SelectedItem="{Binding SelectedNorm}"
-                      Width="200" Height="28"/>
+                      Width="220" Height="28"/>
+            <Button Content="Usar en proyecto"
+                    Command="{Binding ApplySelectedNormCommand}"
+                    Margin="12,0,0,0"
+                    Padding="12,6"
+                    Background="#1565C0"
+                    Foreground="White"/>
         </StackPanel>
 
         <!-- Nombre de la norma actual -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,20">
             <TextBlock Text="Nombre de esta norma:" VerticalAlignment="Center" Margin="0,0,10,0"/>
             <TextBox Text="{Binding CurrentName}" Width="200" Height="28"/>
+            <Button Content="Nueva norma"
+                    Command="{Binding CreateNewNormCommand}"
+                    Margin="12,0,0,0"
+                    Padding="12,6"/>
         </StackPanel>
 
+        <Border Grid.Row="2"
+                Margin="0,0,0,14"
+                Padding="10,8"
+                Background="#E3F2FD"
+                BorderBrush="#90CAF9"
+                BorderThickness="1"
+                CornerRadius="6">
+            <TextBlock>
+                <Run Text="Norma del proyecto actual: "/>
+                <Run Text="{Binding ProjectNormName}" FontWeight="Bold"/>
+            </TextBlock>
+        </Border>
+
         <!-- DataGrid -->
-        <DataGrid Grid.Row="2" ItemsSource="{Binding Rules}"
+        <DataGrid Grid.Row="3" ItemsSource="{Binding Rules}"
                   AutoGenerateColumns="False" CanUserAddRows="False" RowHeight="30">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Parámetro" Binding="{Binding Code}" Width="80" IsReadOnly="True"/>
@@ -51,7 +75,7 @@
         </DataGrid>
 
         <!-- Botones -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <CheckBox Content="Establecer como predeterminada" IsChecked="{Binding IsDefault}" Margin="0,0,20,0"/>
             <Button Content="Guardar Norma" Command="{Binding SaveNormCommand}" 
                     Background="#1976D2" Foreground="White"
